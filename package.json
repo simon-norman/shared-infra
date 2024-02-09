@@ -7,8 +7,6 @@
 	"types": "dist/index.d.ts",
 	"scripts": {
 		"prepublish": "tsup",
-		"build": "tsup",
-		"commit_version": "git add . && git commit -m 'version change'",
 		"bump-patch": "pnpm version patch",
 		"publish-patch": "pnpm bump-patch && pnpm publish"
 	},
