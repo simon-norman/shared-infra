@@ -6,7 +6,11 @@
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",
 	"scripts": {
-		"prepublish": "tsup"
+		"prepublish": "tsup",
+		"build": "tsup",
+		"commit_version": "git add . && git commit -m 'version change'",
+		"bump-patch": "pnpm version patch && pnpm commit_version",
+		"publish-patch": "pnpm bump-patch && pnpm publish"
 	},
 	"devDependencies": {
 		"ts-node": "^10.9.2",
