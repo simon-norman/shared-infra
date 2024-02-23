@@ -1,1 +1,1 @@
-export * from 'src/components/digital-ocean/vpn'
+export * from "src/components/digital-ocean/vpc";

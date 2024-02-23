@@ -5,9 +5,9 @@ export const buildResourceName = (
 	type: string,
 	name: string,
 ) => {
-	return `${region}:${type}:${name}`;
+	return `${region}-${type}-${name}`;
 };
 
 export const buildResourceType = (provider: string, name: string) => {
-	return `${provider}:${name}`;
+	return `${provider}-${name}`;
 };
