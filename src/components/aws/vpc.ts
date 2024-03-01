@@ -1,31 +1,30 @@
-import * as digitalocean from "@pulumi/digitalocean";
+import * as awsx from "@pulumi/awsx";
 import * as pulumi from "@pulumi/pulumi";
 import { buildResourceName } from "src/helpers/resource-name-builder";
 import { ResourceTypes } from "src/shared-types/resource-types";
-import { digitalOceanResourceType } from "./resource-name-builder";
+import { awsResourceType } from "./resource-name-builder";
 
 export class Vpc extends pulumi.ComponentResource {
-	vpc: digitalocean.Vpc;
+	vpc: awsx.ec2.Vpc;
 
 	constructor(opts: Options) {
+		const numberOfAvailabilityZones =
+			opts.originalVpcOpts?.numberOfAvailabilityZones ?? 1;
+
 		const vpcName = buildResourceName({
 			region: opts.region,
 			type: ResourceTypes.vpc,
 			name: opts.name,
 			environment: opts.environment,
 		});
-		super(
-			digitalOceanResourceType(ResourceTypes.vpc),
-			vpcName,
-			{},
-			opts.pulumiOpts,
-		);
+		super(awsResourceType(ResourceTypes.vpc), vpcName, {}, opts.pulumiOpts);
 
-		this.vpc = new digitalocean.Vpc(
+		this.vpc = new awsx.ec2.Vpc(
 			vpcName,
 			{
-				region: opts.region,
 				...opts.originalVpcOpts,
+				numberOfAvailabilityZones,
+				subnetStrategy: "Auto",
 			},
 			{ parent: this },
 		);
@@ -35,9 +34,9 @@ export class Vpc extends pulumi.ComponentResource {
 }
 
 type Options = {
-	originalVpcOpts?: digitalocean.VpcArgs;
+	originalVpcOpts?: awsx.ec2.VpcArgs;
 	pulumiOpts?: pulumi.ComponentResourceOptions;
 	name: string;
-	region: string;
 	environment: string;
+	region: string;
 };

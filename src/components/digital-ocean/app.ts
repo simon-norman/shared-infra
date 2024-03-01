@@ -4,29 +4,32 @@ import { buildResourceName } from "src/helpers/resource-name-builder";
 import { ResourceTypes } from "src/shared-types/resource-types";
 import { digitalOceanResourceType } from "./resource-name-builder";
 
-export class Vpc extends pulumi.ComponentResource {
-	vpc: digitalocean.Vpc;
+export class App extends pulumi.ComponentResource {
+	app: digitalocean.App;
 
 	constructor(opts: Options) {
-		const vpcName = buildResourceName({
+		const appName = buildResourceName({
 			region: opts.region,
-			type: ResourceTypes.vpc,
-			name: opts.name,
+			type: ResourceTypes.app,
+			name: opts.appName,
 			environment: opts.environment,
 		});
+
+		const finalAppOpts: digitalocean.AppArgs["spec"] = {
+			region: opts.region,
+			name: appName,
+			...opts.originalOptions,
+		};
 		super(
-			digitalOceanResourceType(ResourceTypes.vpc),
-			vpcName,
+			digitalOceanResourceType(ResourceTypes.app),
+			appName,
 			{},
 			opts.pulumiOpts,
 		);
 
-		this.vpc = new digitalocean.Vpc(
-			vpcName,
-			{
-				region: opts.region,
-				...opts.originalVpcOpts,
-			},
+		this.app = new digitalocean.App(
+			appName,
+			{ spec: finalAppOpts },
 			{ parent: this },
 		);
 
@@ -35,9 +38,9 @@ export class Vpc extends pulumi.ComponentResource {
 }
 
 type Options = {
-	originalVpcOpts?: digitalocean.VpcArgs;
+	originalOptions?: digitalocean.AppArgs;
 	pulumiOpts?: pulumi.ComponentResourceOptions;
-	name: string;
 	region: string;
+	appName: string;
 	environment: string;
 };

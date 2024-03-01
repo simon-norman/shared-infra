@@ -1,1 +1,2 @@
-export * from "src/components/digital-ocean/vpc";
+export * from "./components/digital-ocean";
+export * from "./components/aws";
