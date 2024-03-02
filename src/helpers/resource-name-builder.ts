@@ -8,6 +8,13 @@ type ResourceNameOpts = {
 	name: string;
 };
 
+export const buildProjectWideResourceName = ({
+	type,
+	name,
+}: Omit<ResourceNameOpts, "region" | "environment">) => {
+	return `${type}-${name}`;
+};
+
 export const buildCrossRegionResourceName = ({
 	environment,
 	type,

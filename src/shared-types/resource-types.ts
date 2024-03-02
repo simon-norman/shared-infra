@@ -1,5 +1,10 @@
 export enum ResourceTypes {
 	vpc = "vpc",
+	cluster = "cluster",
+	loadBalancer = "lb",
+	securityGroup = "security-group",
+	lbListener = "lb-listener",
+	fargateService = "fargate-service",
 	user = "user",
 	userGroup = "user-group",
 	policyAttachment = "policy-attachment",

@@ -1,8 +1,8 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
-import { buildCrossRegionResourceName } from "src/helpers/resource-name-builder";
+import { buildProjectWideResourceName } from "src/helpers/resource-name-builder";
 import { ResourceTypes } from "src/shared-types/resource-types";
-import { awsResourceType } from "./resource-name-builder";
+import { awsResourceType } from "../resource-name-builder";
 
 export class User extends pulumi.ComponentResource {
 	user: aws.iam.User;
@@ -10,10 +10,9 @@ export class User extends pulumi.ComponentResource {
 
 	constructor(opts: Options) {
 		const userName = `${opts.firstName}.${opts.surname}`;
-		const userResourceName = buildCrossRegionResourceName({
+		const userResourceName = buildProjectWideResourceName({
 			type: ResourceTypes.user,
 			name: userName,
-			environment: opts.environment,
 		});
 		super(
 			awsResourceType(ResourceTypes.user),
@@ -27,12 +26,12 @@ export class User extends pulumi.ComponentResource {
 		});
 
 		new aws.iam.UserGroupMembership(`${userResourceName}-membership`, {
-			user: userName,
+			user: this.user.name,
 			groups: opts.userGroupNames,
 		});
 
 		const accessKey = new aws.iam.AccessKey(`${userResourceName}-accesskey`, {
-			user: userName,
+			user: this.user.name,
 			pgpKey: opts.pgpKey,
 		});
 
@@ -47,7 +46,6 @@ export class User extends pulumi.ComponentResource {
 
 type Options = {
 	pulumiOpts?: pulumi.ComponentResourceOptions;
-	environment: string;
 	firstName: string;
 	surname: string;
 	userGroupNames: pulumi.Input<string>[];

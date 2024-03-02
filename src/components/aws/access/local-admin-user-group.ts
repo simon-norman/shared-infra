@@ -1,17 +1,16 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
-import { buildCrossRegionResourceName } from "src/helpers/resource-name-builder";
+import { buildProjectWideResourceName } from "src/helpers/resource-name-builder";
 import { ResourceTypes } from "src/shared-types/resource-types";
-import { awsResourceType } from "./resource-name-builder";
+import { awsResourceType } from "../resource-name-builder";
 
 export class LocalAdminUserGroup extends pulumi.ComponentResource {
 	group: aws.iam.Group;
 
 	constructor(opts: Options) {
-		const groupName = buildCrossRegionResourceName({
+		const groupName = buildProjectWideResourceName({
 			type: ResourceTypes.userGroup,
 			name: "local-admin",
-			environment: opts.environment,
 		});
 		super(
 			awsResourceType(ResourceTypes.userGroup),
@@ -46,11 +45,16 @@ export class LocalAdminUserGroup extends pulumi.ComponentResource {
 			group: this.group.name,
 		});
 
+		const albAttachmentName = `${groupName}-alb-access`;
+		new aws.iam.GroupPolicyAttachment(albAttachmentName, {
+			policyArn: "arn:aws:iam::aws:policy/ElasticLoadBalancingFullAccess",
+			group: this.group.name,
+		});
+
 		this.registerOutputs();
 	}
 }
 
 type Options = {
 	pulumiOpts?: pulumi.ComponentResourceOptions;
-	environment: string;
 };
