@@ -8,7 +8,7 @@ import {
 import { ResourceTypes } from "src/shared-types/resource-types";
 import { awsResourceType } from "../resource-name-builder";
 
-export class ApplicationLoadBalancer extends pulumi.ComponentResource {
+export class FargateService extends pulumi.ComponentResource {
 	service: awsx.ecs.FargateService;
 	targetGroup: aws.lb.TargetGroup;
 
@@ -98,6 +98,7 @@ export class ApplicationLoadBalancer extends pulumi.ComponentResource {
 			fargateServiceName,
 			{
 				name: fargateServiceName,
+				cluster: opts.clusterArn,
 				loadBalancers: [
 					{
 						targetGroupArn: this.targetGroup.arn,
@@ -170,6 +171,7 @@ type Options = {
 	name: string;
 	environment: string;
 	region: string;
+	clusterArn: string;
 	serviceImageUrn: string;
 	loadBalancerArn: string;
 	vpcId: string;

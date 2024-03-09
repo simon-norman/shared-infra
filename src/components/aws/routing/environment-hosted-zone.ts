@@ -4,7 +4,7 @@ import { buildResourceName } from "src/helpers/resource-name-builder";
 import { ResourceTypes } from "src/shared-types/resource-types";
 import { awsResourceType } from "../resource-name-builder";
 
-export class HostedZone extends pulumi.ComponentResource {
+export class EnvironmentHostedZone extends pulumi.ComponentResource {
 	zone: aws.route53.Zone;
 
 	constructor(opts: Options) {

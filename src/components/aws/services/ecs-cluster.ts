@@ -2,9 +2,9 @@ import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
 import { buildResourceName } from "src/helpers/resource-name-builder";
 import { ResourceTypes } from "src/shared-types/resource-types";
-import { awsResourceType } from "./resource-name-builder";
+import { awsResourceType } from "../resource-name-builder";
 
-export class EcsCluster extends pulumi.ComponentResource {
+export class Ec2Cluster extends pulumi.ComponentResource {
 	cluster: aws.ecs.Cluster;
 
 	constructor(opts: Options) {
