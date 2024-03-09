@@ -77,5 +77,5 @@ type Options = {
 	subnetIds: pulumi.Input<pulumi.Input<string>[]>;
 	securityGroup: pulumi.Input<string>;
 	isInternal: boolean;
-	httpsCertificateArn: string;
+	httpsCertificateArn: pulumi.Input<string>;
 };

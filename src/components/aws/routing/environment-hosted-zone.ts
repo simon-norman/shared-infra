@@ -3,6 +3,7 @@ import * as pulumi from "@pulumi/pulumi";
 import { buildResourceName } from "src/helpers/resource-name-builder";
 import { ResourceTypes } from "src/shared-types/resource-types";
 import { awsResourceType } from "../resource-name-builder";
+import { MasterNameServerRecord } from "./name-server-record";
 
 export class EnvironmentHostedZone extends pulumi.ComponentResource {
 	zone: aws.route53.Zone;
@@ -38,6 +39,14 @@ export class EnvironmentHostedZone extends pulumi.ComponentResource {
 			{ parent: this },
 		);
 
+		new MasterNameServerRecord({
+			subdomainEnvironment: opts.environment,
+			region: opts.region,
+			hostedZoneId: opts.masterZoneId,
+			name: opts.name,
+			nameServers: this.zone.nameServers,
+		});
+
 		this.registerOutputs();
 	}
 }
@@ -48,4 +57,5 @@ type Options = {
 	name: string;
 	environment: string;
 	region: string;
+	masterZoneId: pulumi.Input<string>;
 };

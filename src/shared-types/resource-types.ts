@@ -5,6 +5,7 @@ export enum ResourceTypes {
 	httpsCertificate = "https-certificate",
 	route53Zone = "route53-zone",
 	dnsRecord = "dns-record",
+	dnsARecord = "dns-a-record",
 	securityGroup = "security-group",
 	lbListener = "lb-listener",
 	lbListenerRule = "lb-listener-rule",

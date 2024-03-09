@@ -1,22 +1,20 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
-import { buildResourceName } from "src/helpers/resource-name-builder";
+import { buildCrossEnvironmentResourceName } from "src/helpers/resource-name-builder";
 import { ResourceTypes } from "src/shared-types/resource-types";
 import { awsResourceType } from "../resource-name-builder";
 
-export class NameServerRecord extends pulumi.ComponentResource {
+export class MasterNameServerRecord extends pulumi.ComponentResource {
 	record: aws.route53.Record;
 
 	constructor(opts: Options) {
 		const sharedNameOpts = {
 			name: opts.name,
-			environment: opts.environment,
 			region: opts.region,
 		};
 
-		const recordName = buildResourceName({
+		const recordName = buildCrossEnvironmentResourceName({
 			...sharedNameOpts,
-			environment: sharedNameOpts.environment,
 			type: ResourceTypes.dnsRecord,
 		});
 
@@ -27,7 +25,7 @@ export class NameServerRecord extends pulumi.ComponentResource {
 			opts.pulumiOpts,
 		);
 
-		const domainName = `${opts.environment}.simonnorman.online`;
+		const domainName = `${opts.subdomainEnvironment}.simonnorman.online`;
 
 		this.record = new aws.route53.Record(
 			recordName,
@@ -50,7 +48,7 @@ type Options = {
 	originalZoneOpts?: aws.route53.RecordArgs;
 	pulumiOpts?: pulumi.ComponentResourceOptions;
 	name: string;
-	environment: string;
+	subdomainEnvironment: string;
 	region: string;
 	nameServers: pulumi.Input<string[]>;
 	hostedZoneId: pulumi.Input<string>;

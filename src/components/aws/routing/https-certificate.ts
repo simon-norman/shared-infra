@@ -76,5 +76,5 @@ type Options = {
 	name: string;
 	environment: string;
 	region: string;
-	route53ZoneId: string;
+	route53ZoneId: pulumi.Input<string>;
 };

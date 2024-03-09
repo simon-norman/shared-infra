@@ -5,10 +5,12 @@ import {
 	buildHostName,
 	buildResourceName,
 } from "src/helpers/resource-name-builder";
+import { elbHostedZones } from "src/shared-types/aws-elb-hosted-zone";
+import { AwsRegion } from "src/shared-types/aws-regions";
 import { ResourceTypes } from "src/shared-types/resource-types";
 import { awsResourceType } from "../resource-name-builder";
 
-export class FargateService extends pulumi.ComponentResource {
+export class PublicFargateService extends pulumi.ComponentResource {
 	service: awsx.ecs.FargateService;
 	targetGroup: aws.lb.TargetGroup;
 
@@ -130,6 +132,28 @@ export class FargateService extends pulumi.ComponentResource {
 			{ parent: this },
 		);
 
+		const dnsARecordName = buildResourceName({
+			...sharedNameOpts,
+			type: ResourceTypes.dnsARecord,
+		});
+
+		new aws.route53.Record(
+			dnsARecordName,
+			{
+				name: hostname,
+				zoneId: opts.environmentHostedZoneId,
+				type: "A",
+				aliases: [
+					{
+						name: opts.loadBalancerDnsName,
+						zoneId: elbHostedZones[opts.region as AwsRegion],
+						evaluateTargetHealth: true,
+					},
+				],
+			},
+			{ parent: this },
+		);
+
 		this.registerOutputs();
 	}
 }
@@ -171,14 +195,16 @@ type Options = {
 	name: string;
 	environment: string;
 	region: string;
-	clusterArn: string;
-	serviceImageUrn: string;
-	loadBalancerArn: string;
+	clusterArn: pulumi.Input<string>;
+	serviceImageUrn: pulumi.Input<string>;
+	loadBalancerArn: pulumi.Input<string>;
 	vpcId: string;
 	desiredCount?: number;
 	cpu?: string;
 	memory?: string;
 	servicePort: number;
-	httpsCertificateArn: string;
+	httpsCertificateArn: pulumi.Input<string>;
 	listenerArn: pulumi.Input<string>;
+	environmentHostedZoneId: pulumi.Input<string>;
+	loadBalancerDnsName: pulumi.Input<string>;
 };

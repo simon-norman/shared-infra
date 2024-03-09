@@ -51,6 +51,18 @@ export class LocalAdminUserGroup extends pulumi.ComponentResource {
 			group: this.group.name,
 		});
 
+		const route53AttachmentName = `${groupName}-route53-access`;
+		new aws.iam.GroupPolicyAttachment(route53AttachmentName, {
+			policyArn: "arn:aws:iam::aws:policy/AmazonRoute53FullAccess",
+			group: this.group.name,
+		});
+
+		const acmAttachmentName = `${groupName}-acm-access`;
+		new aws.iam.GroupPolicyAttachment(acmAttachmentName, {
+			policyArn: "arn:aws:iam::aws:policy/AWSCertificateManagerFullAccess",
+			group: this.group.name,
+		});
+
 		this.registerOutputs();
 	}
 }

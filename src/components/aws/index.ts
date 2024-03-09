@@ -5,10 +5,10 @@ import { ApplicationLoadBalancer } from "./routing/application-load-balancer";
 import { EnvironmentHostedZone } from "./routing/environment-hosted-zone";
 import { HttpsCertificate } from "./routing/https-certificate";
 import { MasterHostedZone } from "./routing/master-hosted-zone";
-import { NameServerRecord } from "./routing/name-server-record";
+import { MasterNameServerRecord } from "./routing/name-server-record";
 import { Vpc } from "./routing/vpc";
 import { Ec2Cluster } from "./services/ecs-cluster";
-import { FargateService } from "./services/fargate-service";
+import { PublicFargateService } from "./services/fargate-service";
 
 export const aws = {
 	Vpc,
@@ -18,8 +18,8 @@ export const aws = {
 	SecurityGroupInboundPublicTlsOutboundAll,
 	Ec2Cluster,
 	HttpsCertificate,
-	FargateService,
-	NameServerRecord,
+	PublicFargateService,
+	MasterNameServerRecord,
 	MasterHostedZone,
 	EnvironmentHostedZone,
 };
