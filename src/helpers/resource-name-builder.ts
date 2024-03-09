@@ -15,6 +15,14 @@ export const buildProjectWideResourceName = ({
 	return `${type}-${name}`;
 };
 
+export const buildCrossEnvironmentResourceName = ({
+	type,
+	name,
+	region,
+}: Omit<ResourceNameOpts, "environment">) => {
+	return `${region}-${type}-${name}`;
+};
+
 export const buildCrossRegionResourceName = ({
 	environment,
 	type,
@@ -37,4 +45,13 @@ export const buildResourceTypeName = (
 	name: ResourceTypes,
 ) => {
 	return `${provider}-${name}`;
+};
+
+type HostnameOptions = {
+	environment: string;
+	name: string;
+};
+
+export const buildHostName = ({ environment, name }: HostnameOptions) => {
+	return `${name}.${environment}.simonnorman.online`;
 };

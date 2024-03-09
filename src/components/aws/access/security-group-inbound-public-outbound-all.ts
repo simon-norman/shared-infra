@@ -2,7 +2,7 @@ import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
 import { buildResourceName } from "src/helpers/resource-name-builder";
 import { ResourceTypes } from "src/shared-types/resource-types";
-import { awsResourceType } from "./resource-name-builder";
+import { awsResourceType } from "../resource-name-builder";
 
 export class SecurityGroupInboundPublicTlsOutboundAll extends pulumi.ComponentResource {
 	securityGroup: aws.ec2.SecurityGroup;

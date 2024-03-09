@@ -1,9 +1,9 @@
 import { LocalAdminUserGroup } from "./access/local-admin-user-group";
+import { SecurityGroupInboundPublicTlsOutboundAll } from "./access/security-group-inbound-public-outbound-all";
 import { User } from "./access/user";
-import { ApplicationLoadBalancer } from "./application-load-balancer";
 import { EcsCluster } from "./ecs-cluster";
-import { SecurityGroupInboundPublicTlsOutboundAll } from "./security-group-inbound-public-outbound-all";
-import { Vpc } from "./vpc";
+import { ApplicationLoadBalancer } from "./routing/application-load-balancer";
+import { Vpc } from "./routing/vpc";
 
 export const aws = {
 	Vpc,

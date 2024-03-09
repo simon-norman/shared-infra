@@ -2,7 +2,7 @@ import * as awsx from "@pulumi/awsx";
 import * as pulumi from "@pulumi/pulumi";
 import { buildResourceName } from "src/helpers/resource-name-builder";
 import { ResourceTypes } from "src/shared-types/resource-types";
-import { awsResourceType } from "./resource-name-builder";
+import { awsResourceType } from "../resource-name-builder";
 
 export class Vpc extends pulumi.ComponentResource {
 	vpc: awsx.ec2.Vpc;
