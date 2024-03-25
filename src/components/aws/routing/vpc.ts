@@ -1,7 +1,7 @@
 import * as awsx from "@pulumi/awsx";
 import * as pulumi from "@pulumi/pulumi";
 import { buildResourceName } from "src/helpers/resource-name-builder";
-import { ResourceTypes } from "src/shared-types/resource-types";
+import { AwsResourceTypes } from "src/shared-types/aws-resource-types";
 import { awsResourceType } from "../resource-name-builder";
 
 export class Vpc extends pulumi.ComponentResource {
@@ -15,11 +15,11 @@ export class Vpc extends pulumi.ComponentResource {
 
 		const vpcName = buildResourceName({
 			region: opts.region,
-			type: ResourceTypes.vpc,
+			type: AwsResourceTypes.vpc,
 			name: opts.name,
 			environment: opts.environment,
 		});
-		super(awsResourceType(ResourceTypes.vpc), vpcName, {}, opts.pulumiOpts);
+		super(awsResourceType(AwsResourceTypes.vpc), vpcName, {}, opts.pulumiOpts);
 
 		this.vpc = new awsx.ec2.Vpc(
 			vpcName,

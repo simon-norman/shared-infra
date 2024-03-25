@@ -7,12 +7,14 @@ import {
 } from "src/helpers/resource-name-builder";
 import { elbHostedZones } from "src/shared-types/aws-elb-hosted-zone";
 import { AwsRegion } from "src/shared-types/aws-regions";
-import { ResourceTypes } from "src/shared-types/resource-types";
+import { AwsResourceTypes } from "src/shared-types/aws-resource-types";
 import { awsResourceType } from "../resource-name-builder";
 
 export class PublicFargateService extends pulumi.ComponentResource {
 	service: awsx.ecs.FargateService;
 	targetGroup: aws.lb.TargetGroup;
+	image: awsx.ecr.Image;
+	ecrRepo: awsx.ecr.Repository;
 
 	constructor(opts: Options) {
 		const sharedNameOpts = {
@@ -23,19 +25,52 @@ export class PublicFargateService extends pulumi.ComponentResource {
 
 		const fargateServiceName = buildResourceName({
 			...sharedNameOpts,
-			type: ResourceTypes.fargateService,
+			type: AwsResourceTypes.fargateService,
 		});
 
 		super(
-			awsResourceType(ResourceTypes.fargateService),
+			awsResourceType(AwsResourceTypes.fargateService),
 			fargateServiceName,
 			{},
 			opts.pulumiOpts,
 		);
 
+		const ecrRepoName = buildResourceName({
+			...sharedNameOpts,
+			type: AwsResourceTypes.imageRepository,
+		});
+
+		const imageAgeLimitInDays = 3;
+		this.ecrRepo = new awsx.ecr.Repository(ecrRepoName, {
+			name: ecrRepoName,
+			forceDelete: true,
+			lifecyclePolicy: {
+				rules: [
+					{
+						description: `Remove untagged images after ${imageAgeLimitInDays}`,
+						tagStatus: "untagged",
+						maximumAgeLimit: imageAgeLimitInDays,
+					},
+				],
+			},
+		});
+
+		const imageName = buildResourceName({
+			...sharedNameOpts,
+			type: AwsResourceTypes.image,
+		});
+		this.image = new awsx.ecr.Image(imageName, {
+			repositoryUrl: this.ecrRepo.url,
+			context: opts.serviceDockerContext,
+			dockerfile: opts.serviceDockerfilePath,
+			// @ts-expect-error - parameter is in pulumi docs but missing in types - https://www.pulumi.com/registry/packages/awsx/api-docs/ecr/image/#imagetag_nodejs
+			imageTag: "latest",
+			target: "release",
+		});
+
 		const targetGroupName = buildResourceName({
 			...sharedNameOpts,
-			type: ResourceTypes.targetGroup,
+			type: AwsResourceTypes.targetGroup,
 		});
 
 		this.targetGroup = new aws.lb.TargetGroup(targetGroupName, {
@@ -45,7 +80,7 @@ export class PublicFargateService extends pulumi.ComponentResource {
 				path: "/health",
 			},
 			vpcId: opts.vpcId,
-			port: opts.servicePort,
+			port: 80,
 			deregistrationDelay: 120,
 			protocol: "http",
 			name: targetGroupName,
@@ -54,7 +89,7 @@ export class PublicFargateService extends pulumi.ComponentResource {
 
 		const listenerRuleName = buildResourceName({
 			...sharedNameOpts,
-			type: ResourceTypes.lbListenerRule,
+			type: AwsResourceTypes.lbListenerRule,
 		});
 
 		const hostname = buildHostName(sharedNameOpts);
@@ -88,12 +123,12 @@ export class PublicFargateService extends pulumi.ComponentResource {
 
 		const taskDefinitionName = buildResourceName({
 			...sharedNameOpts,
-			type: ResourceTypes.taskDefinition,
+			type: AwsResourceTypes.taskDefinition,
 		});
 
 		const serviceContainerName = buildResourceName({
 			...sharedNameOpts,
-			type: ResourceTypes.serviceContainer,
+			type: AwsResourceTypes.serviceContainer,
 		});
 
 		this.service = new awsx.ecs.FargateService(
@@ -110,6 +145,10 @@ export class PublicFargateService extends pulumi.ComponentResource {
 				],
 				forceNewDeployment: true,
 				desiredCount: settings.desiredCount,
+				networkConfiguration: {
+					subnets: opts.subnets,
+					securityGroups: opts.securityGroups,
+				},
 				taskDefinitionArgs: {
 					cpu: settings.cpu,
 					memory: settings.memory,
@@ -117,7 +156,7 @@ export class PublicFargateService extends pulumi.ComponentResource {
 					containers: {
 						[serviceContainerName]: {
 							name: serviceContainerName,
-							image: opts.serviceImageUrn,
+							image: this.image.imageUri,
 							portMappings: [
 								{
 									containerPort: opts.servicePort,
@@ -134,7 +173,7 @@ export class PublicFargateService extends pulumi.ComponentResource {
 
 		const dnsARecordName = buildResourceName({
 			...sharedNameOpts,
-			type: ResourceTypes.dnsARecord,
+			type: AwsResourceTypes.dnsARecord,
 		});
 
 		new aws.route53.Record(
@@ -157,21 +196,6 @@ export class PublicFargateService extends pulumi.ComponentResource {
 		this.registerOutputs();
 	}
 }
-
-// default settings for prod - 2 instances
-// 1 container is always the default in general
-// set cpu and memory
-// in what ways configurable?
-// well can override everything of course
-// could have settings for service task definition - should always be that
-// but there is only one task definition anyway
-// settings for service container
-// and then could provide settings for other containers
-// instance count can be independent
-// container-level cpu and memory for service container configurable
-// likewise task-level
-// set default scheduling for non-prod, but allow overrides - so parameters for that
-//
 
 const defaultProdSettings = () => {
 	return {
@@ -196,9 +220,8 @@ type Options = {
 	environment: string;
 	region: string;
 	clusterArn: pulumi.Input<string>;
-	serviceImageUrn: pulumi.Input<string>;
 	loadBalancerArn: pulumi.Input<string>;
-	vpcId: string;
+	vpcId: pulumi.Input<string>;
 	desiredCount?: number;
 	cpu?: string;
 	memory?: string;
@@ -207,4 +230,8 @@ type Options = {
 	listenerArn: pulumi.Input<string>;
 	environmentHostedZoneId: pulumi.Input<string>;
 	loadBalancerDnsName: pulumi.Input<string>;
+	serviceDockerContext: string;
+	serviceDockerfilePath: string;
+	subnets: pulumi.Input<pulumi.Input<string>[]>;
+	securityGroups: pulumi.Input<pulumi.Input<string>[]>;
 };

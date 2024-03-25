@@ -1,4 +1,5 @@
 import { LocalAdminUserGroup } from "./access/local-admin-user-group";
+import { SecurityGroupInboundPrivateOutboundAll } from "./access/security-group-inbound-private-outbound-all";
 import { SecurityGroupInboundPublicTlsOutboundAll } from "./access/security-group-inbound-public-outbound-all";
 import { User } from "./access/user";
 import { ApplicationLoadBalancer } from "./routing/application-load-balancer";
@@ -8,7 +9,7 @@ import { MasterHostedZone } from "./routing/master-hosted-zone";
 import { MasterNameServerRecord } from "./routing/name-server-record";
 import { Vpc } from "./routing/vpc";
 import { Ec2Cluster } from "./services/ecs-cluster";
-import { PublicFargateService } from "./services/fargate-service";
+import { PublicFargateService } from "./services/public-fargate-service";
 
 export const aws = {
 	Vpc,
@@ -16,6 +17,7 @@ export const aws = {
 	User,
 	ApplicationLoadBalancer,
 	SecurityGroupInboundPublicTlsOutboundAll,
+	SecurityGroupInboundPrivateOutboundAll,
 	Ec2Cluster,
 	HttpsCertificate,
 	PublicFargateService,

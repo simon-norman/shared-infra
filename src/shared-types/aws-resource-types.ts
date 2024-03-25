@@ -1,4 +1,4 @@
-export enum ResourceTypes {
+export enum AwsResourceTypes {
 	vpc = "vpc",
 	cluster = "cluster",
 	loadBalancer = "lb",
@@ -17,7 +17,6 @@ export enum ResourceTypes {
 	userGroup = "user-group",
 	policyAttachment = "policy-attachment",
 	permissionsPolicy = "permissions-policy",
-	app = "app",
 	imageRepository = "image-repository",
-	service = "service",
+	image = "image",
 }

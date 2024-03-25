@@ -2,9 +2,9 @@ import {
 	buildResourceName,
 	buildResourceTypeName,
 } from "src/helpers/resource-name-builder";
-import { ResourceTypes } from "src/shared-types/resource-types";
+import { DigitalOceanResourceTypes } from "src/shared-types/digital-ocean-resource-types";
 
-export const digitalOceanResourceType = (type: ResourceTypes) => {
+export const digitalOceanResourceType = (type: DigitalOceanResourceTypes) => {
 	return buildResourceTypeName("digital-ocean", type);
 };
 
@@ -15,7 +15,7 @@ export const buildRepositoryName = (
 ) => {
 	return buildResourceName({
 		region,
-		type: ResourceTypes.imageRepository,
+		type: DigitalOceanResourceTypes.imageRepository,
 		name: imageName,
 		environment,
 	});

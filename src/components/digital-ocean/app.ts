@@ -1,7 +1,7 @@
 import * as digitalocean from "@pulumi/digitalocean";
 import * as pulumi from "@pulumi/pulumi";
 import { buildResourceName } from "src/helpers/resource-name-builder";
-import { ResourceTypes } from "src/shared-types/resource-types";
+import { DigitalOceanResourceTypes } from "src/shared-types/digital-ocean-resource-types";
 import { digitalOceanResourceType } from "./resource-name-builder";
 
 export class App extends pulumi.ComponentResource {
@@ -10,7 +10,7 @@ export class App extends pulumi.ComponentResource {
 	constructor(opts: Options) {
 		const appName = buildResourceName({
 			region: opts.region,
-			type: ResourceTypes.app,
+			type: DigitalOceanResourceTypes.app,
 			name: opts.appName,
 			environment: opts.environment,
 		});
@@ -21,7 +21,7 @@ export class App extends pulumi.ComponentResource {
 			...opts.originalOptions,
 		};
 		super(
-			digitalOceanResourceType(ResourceTypes.app),
+			digitalOceanResourceType(DigitalOceanResourceTypes.app),
 			appName,
 			{},
 			opts.pulumiOpts,

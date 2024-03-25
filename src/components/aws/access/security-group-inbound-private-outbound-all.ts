@@ -4,7 +4,7 @@ import { buildResourceName } from "src/helpers/resource-name-builder";
 import { AwsResourceTypes } from "src/shared-types/aws-resource-types";
 import { awsResourceType } from "../resource-name-builder";
 
-export class SecurityGroupInboundPublicTlsOutboundAll extends pulumi.ComponentResource {
+export class SecurityGroupInboundPrivateOutboundAll extends pulumi.ComponentResource {
 	securityGroup: aws.ec2.SecurityGroup;
 
 	constructor(opts: Options) {
@@ -26,46 +26,27 @@ export class SecurityGroupInboundPublicTlsOutboundAll extends pulumi.ComponentRe
 			{
 				name: securityGroupName,
 				vpcId: opts.vpcId,
-				description:
-					"Allow public TLS inbound traffic and all outbound traffic - mainly for publicly exposed load balancers",
+				description: "Allow http traffic from another security group",
 			},
 			{ parent: this },
 		);
 
 		new aws.vpc.SecurityGroupIngressRule(
-			`${securityGroupName}-ingressrule-publictls-ipv4`,
+			`${securityGroupName}-ingressrule-http-ipv4`,
 			{
 				securityGroupId: this.securityGroup.id,
-				cidrIpv4: "0.0.0.0/0",
-				fromPort: 443,
+				fromPort: 80,
 				ipProtocol: "tcp",
-				toPort: 443,
+				toPort: 80,
+				referencedSecurityGroupId: opts.sourceSecurityGroupId,
 			},
 		);
-		new aws.vpc.SecurityGroupIngressRule(
-			`${securityGroupName}-ingressrule-publictls-ipv6`,
-			{
-				securityGroupId: this.securityGroup.id,
-				cidrIpv6: "::/0",
-				fromPort: 443,
-				ipProtocol: "tcp",
-				toPort: 443,
-			},
-		);
+
 		new aws.vpc.SecurityGroupEgressRule(
 			`${securityGroupName}-egressrule-alltraffic-ipv4`,
 			{
 				securityGroupId: this.securityGroup.id,
 				cidrIpv4: "0.0.0.0/0",
-				ipProtocol: "-1",
-			},
-		);
-
-		new aws.vpc.SecurityGroupEgressRule(
-			`${securityGroupName}-egressrule-alltraffic-ipv6`,
-			{
-				securityGroupId: this.securityGroup.id,
-				cidrIpv6: "::/0",
 				ipProtocol: "-1",
 			},
 		);
@@ -81,4 +62,5 @@ type Options = {
 	environment: string;
 	region: string;
 	vpcId: pulumi.Input<string>;
+	sourceSecurityGroupId: pulumi.Input<string>;
 };

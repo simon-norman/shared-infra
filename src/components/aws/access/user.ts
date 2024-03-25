@@ -1,7 +1,7 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
 import { buildProjectWideResourceName } from "src/helpers/resource-name-builder";
-import { ResourceTypes } from "src/shared-types/resource-types";
+import { AwsResourceTypes } from "src/shared-types/aws-resource-types";
 import { awsResourceType } from "../resource-name-builder";
 
 export class User extends pulumi.ComponentResource {
@@ -11,11 +11,11 @@ export class User extends pulumi.ComponentResource {
 	constructor(opts: Options) {
 		const userName = `${opts.firstName}.${opts.surname}`;
 		const userResourceName = buildProjectWideResourceName({
-			type: ResourceTypes.user,
+			type: AwsResourceTypes.user,
 			name: userName,
 		});
 		super(
-			awsResourceType(ResourceTypes.user),
+			awsResourceType(AwsResourceTypes.user),
 			userResourceName,
 			{},
 			opts.pulumiOpts,

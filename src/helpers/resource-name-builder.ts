@@ -1,10 +1,11 @@
 import { Input } from "@pulumi/pulumi";
-import { ResourceTypes } from "src/shared-types/resource-types";
+import { AwsResourceTypes } from "src/shared-types/aws-resource-types";
+import { DigitalOceanResourceTypes } from "src/shared-types/digital-ocean-resource-types";
 
 type ResourceNameOpts = {
 	region: Input<string>;
 	environment: string;
-	type: ResourceTypes;
+	type: AwsResourceTypes | DigitalOceanResourceTypes;
 	name: string;
 };
 
@@ -42,7 +43,7 @@ export const buildResourceName = ({
 
 export const buildResourceTypeName = (
 	provider: string,
-	name: ResourceTypes,
+	name: AwsResourceTypes | DigitalOceanResourceTypes,
 ) => {
 	return `${provider}-${name}`;
 };

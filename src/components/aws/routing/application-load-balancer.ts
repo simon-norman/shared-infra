@@ -2,7 +2,7 @@ import * as aws from "@pulumi/aws";
 import * as awsx from "@pulumi/awsx";
 import * as pulumi from "@pulumi/pulumi";
 import { buildResourceName } from "src/helpers/resource-name-builder";
-import { ResourceTypes } from "src/shared-types/resource-types";
+import { AwsResourceTypes } from "src/shared-types/aws-resource-types";
 import { awsResourceType } from "../resource-name-builder";
 
 export class ApplicationLoadBalancer extends pulumi.ComponentResource {
@@ -18,11 +18,11 @@ export class ApplicationLoadBalancer extends pulumi.ComponentResource {
 
 		const loadBalancerName = buildResourceName({
 			...sharedNameOpts,
-			type: ResourceTypes.loadBalancer,
+			type: AwsResourceTypes.loadBalancer,
 		});
 
 		super(
-			awsResourceType(ResourceTypes.loadBalancer),
+			awsResourceType(AwsResourceTypes.loadBalancer),
 			loadBalancerName,
 			{},
 			opts.pulumiOpts,
@@ -43,7 +43,7 @@ export class ApplicationLoadBalancer extends pulumi.ComponentResource {
 
 		const listenerName = buildResourceName({
 			...sharedNameOpts,
-			type: ResourceTypes.lbListener,
+			type: AwsResourceTypes.lbListener,
 		});
 
 		this.listener = new aws.lb.Listener(listenerName, {

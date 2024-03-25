@@ -1,7 +1,7 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
 import { buildCrossEnvironmentResourceName } from "src/helpers/resource-name-builder";
-import { ResourceTypes } from "src/shared-types/resource-types";
+import { AwsResourceTypes } from "src/shared-types/aws-resource-types";
 import { awsResourceType } from "../resource-name-builder";
 
 export class MasterHostedZone extends pulumi.ComponentResource {
@@ -15,11 +15,11 @@ export class MasterHostedZone extends pulumi.ComponentResource {
 
 		const zoneName = buildCrossEnvironmentResourceName({
 			...sharedNameOpts,
-			type: ResourceTypes.route53Zone,
+			type: AwsResourceTypes.route53Zone,
 		});
 
 		super(
-			awsResourceType(ResourceTypes.route53Zone),
+			awsResourceType(AwsResourceTypes.route53Zone),
 			zoneName,
 			{},
 			opts.pulumiOpts,

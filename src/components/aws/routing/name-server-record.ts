@@ -1,7 +1,7 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
 import { buildCrossEnvironmentResourceName } from "src/helpers/resource-name-builder";
-import { ResourceTypes } from "src/shared-types/resource-types";
+import { AwsResourceTypes } from "src/shared-types/aws-resource-types";
 import { awsResourceType } from "../resource-name-builder";
 
 export class MasterNameServerRecord extends pulumi.ComponentResource {
@@ -15,11 +15,11 @@ export class MasterNameServerRecord extends pulumi.ComponentResource {
 
 		const recordName = buildCrossEnvironmentResourceName({
 			...sharedNameOpts,
-			type: ResourceTypes.dnsRecord,
+			type: AwsResourceTypes.dnsRecord,
 		});
 
 		super(
-			awsResourceType(ResourceTypes.dnsRecord),
+			awsResourceType(AwsResourceTypes.dnsRecord),
 			recordName,
 			{},
 			opts.pulumiOpts,

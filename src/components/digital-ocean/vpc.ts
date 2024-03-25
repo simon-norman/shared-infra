@@ -1,7 +1,7 @@
 import * as digitalocean from "@pulumi/digitalocean";
 import * as pulumi from "@pulumi/pulumi";
 import { buildResourceName } from "src/helpers/resource-name-builder";
-import { ResourceTypes } from "src/shared-types/resource-types";
+import { DigitalOceanResourceTypes } from "src/shared-types/digital-ocean-resource-types";
 import { digitalOceanResourceType } from "./resource-name-builder";
 
 export class Vpc extends pulumi.ComponentResource {
@@ -10,12 +10,12 @@ export class Vpc extends pulumi.ComponentResource {
 	constructor(opts: Options) {
 		const vpcName = buildResourceName({
 			region: opts.region,
-			type: ResourceTypes.vpc,
+			type: DigitalOceanResourceTypes.vpc,
 			name: opts.name,
 			environment: opts.environment,
 		});
 		super(
-			digitalOceanResourceType(ResourceTypes.vpc),
+			digitalOceanResourceType(DigitalOceanResourceTypes.vpc),
 			vpcName,
 			{},
 			opts.pulumiOpts,

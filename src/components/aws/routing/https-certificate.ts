@@ -1,7 +1,7 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
 import { buildResourceName } from "src/helpers/resource-name-builder";
-import { ResourceTypes } from "src/shared-types/resource-types";
+import { AwsResourceTypes } from "src/shared-types/aws-resource-types";
 import { awsResourceType } from "../resource-name-builder";
 
 export class HttpsCertificate extends pulumi.ComponentResource {
@@ -17,11 +17,11 @@ export class HttpsCertificate extends pulumi.ComponentResource {
 
 		const certificateName = buildResourceName({
 			...sharedNameOpts,
-			type: ResourceTypes.httpsCertificate,
+			type: AwsResourceTypes.httpsCertificate,
 		});
 
 		super(
-			awsResourceType(ResourceTypes.httpsCertificate),
+			awsResourceType(AwsResourceTypes.httpsCertificate),
 			certificateName,
 			{},
 			opts.pulumiOpts,
@@ -42,7 +42,7 @@ export class HttpsCertificate extends pulumi.ComponentResource {
 		const dnsRecordName = buildResourceName({
 			environment: opts.environment,
 			region: opts.region,
-			type: ResourceTypes.dnsRecord,
+			type: AwsResourceTypes.dnsRecord,
 			name: "cert-validation",
 		});
 

@@ -2,9 +2,9 @@ import {
 	buildResourceName,
 	buildResourceTypeName,
 } from "src/helpers/resource-name-builder";
-import { ResourceTypes } from "src/shared-types/resource-types";
+import { AwsResourceTypes } from "src/shared-types/aws-resource-types";
 
-export const awsResourceType = (type: ResourceTypes) => {
+export const awsResourceType = (type: AwsResourceTypes) => {
 	return buildResourceTypeName("aws", type);
 };
 
@@ -15,7 +15,7 @@ export const buildRepositoryName = (
 ) => {
 	return buildResourceName({
 		region,
-		type: ResourceTypes.imageRepository,
+		type: AwsResourceTypes.imageRepository,
 		name: imageName,
 		environment,
 	});
