@@ -1,6 +1,8 @@
+import { CiCdUserGroup } from "./access/ci-cd-user-group";
 import { LocalAdminUserGroup } from "./access/local-admin-user-group";
 import { SecurityGroupInboundPrivateOutboundAll } from "./access/security-group-inbound-private-outbound-all";
 import { SecurityGroupInboundPublicTlsOutboundAll } from "./access/security-group-inbound-public-outbound-all";
+import { ServiceUser } from "./access/service-user";
 import { User } from "./access/user";
 import { ApplicationLoadBalancer } from "./routing/application-load-balancer";
 import { EnvironmentHostedZone } from "./routing/environment-hosted-zone";
@@ -15,6 +17,7 @@ export const aws = {
 	Vpc,
 	LocalAdminUserGroup,
 	User,
+	CiCdUserGroup,
 	ApplicationLoadBalancer,
 	SecurityGroupInboundPublicTlsOutboundAll,
 	SecurityGroupInboundPrivateOutboundAll,
@@ -23,5 +26,6 @@ export const aws = {
 	PublicFargateService,
 	MasterNameServerRecord,
 	MasterHostedZone,
+	ServiceUser,
 	EnvironmentHostedZone,
 };

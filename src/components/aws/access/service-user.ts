@@ -4,7 +4,7 @@ import { buildProjectWideResourceName } from "src/helpers/resource-name-builder"
 import { AwsResourceTypes } from "src/shared-types/aws-resource-types";
 import { awsResourceType } from "../resource-name-builder";
 
-export class User extends pulumi.ComponentResource {
+export class ServiceUser extends pulumi.ComponentResource {
 	user: aws.iam.User;
 	accessKey: { id: pulumi.Output<string>; secret: pulumi.Output<string> };
 
@@ -25,23 +25,22 @@ export class User extends pulumi.ComponentResource {
 			name: userName,
 		});
 
-		const userLoginProfileName = buildProjectWideResourceName({
-			type: AwsResourceTypes.userLoginProfile,
+		const membershipResourceName = buildProjectWideResourceName({
+			type: AwsResourceTypes.userGroupMembership,
 			name: userName,
 		});
 
-		new aws.iam.UserLoginProfile(userLoginProfileName, {
-			user: this.user.name,
-			pgpKey: opts.pgpKey,
-			passwordResetRequired: true,
-		});
-
-		new aws.iam.UserGroupMembership(`${userResourceName}-membership`, {
+		new aws.iam.UserGroupMembership(membershipResourceName, {
 			user: this.user.name,
 			groups: opts.userGroupNames,
 		});
 
-		const accessKey = new aws.iam.AccessKey(`${userResourceName}-accesskey`, {
+		const accessKeyName = buildProjectWideResourceName({
+			type: AwsResourceTypes.accessKey,
+			name: userName,
+		});
+
+		const accessKey = new aws.iam.AccessKey(accessKeyName, {
 			user: this.user.name,
 			pgpKey: opts.pgpKey,
 		});

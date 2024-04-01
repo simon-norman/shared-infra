@@ -4,13 +4,13 @@ import { buildProjectWideResourceName } from "src/helpers/resource-name-builder"
 import { AwsResourceTypes } from "src/shared-types/aws-resource-types";
 import { awsResourceType } from "../resource-name-builder";
 
-export class LocalAdminUserGroup extends pulumi.ComponentResource {
+export class CiCdUserGroup extends pulumi.ComponentResource {
 	group: aws.iam.Group;
 
 	constructor(opts: Options) {
 		const groupName = buildProjectWideResourceName({
 			type: AwsResourceTypes.userGroup,
-			name: "local-admin",
+			name: "ci-cd-user-group",
 		});
 		super(
 			awsResourceType(AwsResourceTypes.userGroup),
@@ -24,12 +24,6 @@ export class LocalAdminUserGroup extends pulumi.ComponentResource {
 		const vpcAttachmentName = `${groupName}-vpc-access`;
 		new aws.iam.GroupPolicyAttachment(vpcAttachmentName, {
 			policyArn: "arn:aws:iam::aws:policy/AmazonVPCFullAccess",
-			group: this.group.name,
-		});
-
-		const iamAttachmentName = `${groupName}-iam-access`;
-		new aws.iam.GroupPolicyAttachment(iamAttachmentName, {
-			policyArn: "arn:aws:iam::aws:policy/IAMFullAccess",
 			group: this.group.name,
 		});
 

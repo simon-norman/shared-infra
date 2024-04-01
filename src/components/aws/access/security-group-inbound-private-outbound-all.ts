@@ -35,9 +35,9 @@ export class SecurityGroupInboundPrivateOutboundAll extends pulumi.ComponentReso
 			`${securityGroupName}-ingressrule-http-ipv4`,
 			{
 				securityGroupId: this.securityGroup.id,
-				fromPort: 80,
+				fromPort: 3000,
 				ipProtocol: "tcp",
-				toPort: 80,
+				toPort: 3000,
 				referencedSecurityGroupId: opts.sourceSecurityGroupId,
 			},
 		);

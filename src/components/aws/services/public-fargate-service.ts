@@ -13,6 +13,8 @@ import { awsResourceType } from "../resource-name-builder";
 export class PublicFargateService extends pulumi.ComponentResource {
 	service: awsx.ecs.FargateService;
 	targetGroup: aws.lb.TargetGroup;
+	listenerRule: aws.lb.ListenerRule;
+	dnsARecord: aws.route53.Record;
 	image: awsx.ecr.Image;
 	ecrRepo: awsx.ecr.Repository;
 
@@ -64,8 +66,9 @@ export class PublicFargateService extends pulumi.ComponentResource {
 			context: opts.serviceDockerContext,
 			dockerfile: opts.serviceDockerfilePath,
 			// @ts-expect-error - parameter is in pulumi docs but missing in types - https://www.pulumi.com/registry/packages/awsx/api-docs/ecr/image/#imagetag_nodejs
-			imageTag: "latest",
+			imageTag: `${opts.name}:latest`,
 			target: "release",
+			platform: "linux/amd64",
 		});
 
 		const targetGroupName = buildResourceName({
@@ -73,19 +76,24 @@ export class PublicFargateService extends pulumi.ComponentResource {
 			type: AwsResourceTypes.targetGroup,
 		});
 
-		this.targetGroup = new aws.lb.TargetGroup(targetGroupName, {
-			healthCheck: {
-				enabled: true,
-				unhealthyThreshold: 5,
-				path: "/health",
+		this.targetGroup = new aws.lb.TargetGroup(
+			targetGroupName,
+			{
+				healthCheck: {
+					enabled: true,
+					unhealthyThreshold: 5,
+					path: "/health",
+				},
+				vpcId: opts.vpcId,
+				port: opts.servicePort,
+				deregistrationDelay: 120,
+				protocol: "HTTP",
+				name: targetGroupName,
+				targetType: "ip",
+				loadBalancingAlgorithmType: "least_outstanding_requests",
 			},
-			vpcId: opts.vpcId,
-			port: 80,
-			deregistrationDelay: 120,
-			protocol: "http",
-			name: targetGroupName,
-			loadBalancingAlgorithmType: "leastOutstandingRequests",
-		});
+			{ deleteBeforeReplace: true },
+		);
 
 		const listenerRuleName = buildResourceName({
 			...sharedNameOpts,
@@ -94,7 +102,7 @@ export class PublicFargateService extends pulumi.ComponentResource {
 
 		const hostname = buildHostName(sharedNameOpts);
 
-		new aws.lb.ListenerRule(listenerRuleName, {
+		this.listenerRule = new aws.lb.ListenerRule(listenerRuleName, {
 			listenerArn: opts.listenerArn,
 			actions: [
 				{
@@ -160,7 +168,6 @@ export class PublicFargateService extends pulumi.ComponentResource {
 							portMappings: [
 								{
 									containerPort: opts.servicePort,
-									hostPort: opts.servicePort,
 								},
 							],
 						},
@@ -176,7 +183,7 @@ export class PublicFargateService extends pulumi.ComponentResource {
 			type: AwsResourceTypes.dnsARecord,
 		});
 
-		new aws.route53.Record(
+		this.dnsARecord = new aws.route53.Record(
 			dnsARecordName,
 			{
 				name: hostname,
