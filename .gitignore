@@ -2,3 +2,5 @@
 node_modules/
 /dist
 Pulumi.*.yaml
+
+**/.DS_Store
