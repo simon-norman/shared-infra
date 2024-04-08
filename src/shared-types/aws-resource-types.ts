@@ -11,7 +11,7 @@ export enum AwsResourceTypes {
 	lbListenerRule = "lb-listener-rule",
 	fargateService = "fargate-service",
 	taskDefinition = "task-definition",
-	targetGroup = "target-group",
+	targetGroup = "tg",
 	serviceContainer = "service-container",
 	user = "user",
 	userLoginProfile = "user-login-profile",
