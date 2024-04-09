@@ -65,9 +65,9 @@ export class PublicFargateService extends pulumi.ComponentResource {
 			repositoryUrl: this.ecrRepo.url,
 			context: opts.serviceDockerContext,
 			dockerfile: opts.serviceDockerfilePath,
+			target: opts.serviceDockerfileTarget,
 			// @ts-expect-error - parameter is in pulumi docs but missing in types - https://www.pulumi.com/registry/packages/awsx/api-docs/ecr/image/#imagetag_nodejs
 			imageTag: `${opts.name}:latest`,
-			target: "release",
 			platform: "linux/amd64",
 		});
 
@@ -239,6 +239,7 @@ type Options = {
 	loadBalancerDnsName: pulumi.Input<string>;
 	serviceDockerContext: string;
 	serviceDockerfilePath: string;
+	serviceDockerfileTarget: string;
 	subnets: pulumi.Input<pulumi.Input<string>[]>;
 	securityGroups: pulumi.Input<pulumi.Input<string>[]>;
 };

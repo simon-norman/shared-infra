@@ -69,6 +69,12 @@ export class CiCdUserGroup extends pulumi.ComponentResource {
 			group: this.group.name,
 		});
 
+		const iamAttachmentName = `${groupName}-iam-access`;
+		new aws.iam.GroupPolicyAttachment(iamAttachmentName, {
+			policyArn: "arn:aws:iam::aws:policy/IAMReadOnlyAccess",
+			group: this.group.name,
+		});
+
 		this.registerOutputs();
 	}
 }
