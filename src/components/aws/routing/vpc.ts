@@ -55,7 +55,7 @@ export class Vpc extends pulumi.ComponentResource {
 
 		this.endpointSecurityGroup = new SecurityGroupInboundNoneOutboundAll({
 			...sharedNameOpts,
-			vpcId: this.vpc.vpcId,
+			vpcId: this.vpc.vpc.id,
 		});
 
 		this.vpnEndpoint = new aws.ec2clientvpn.Endpoint(vpnEndpoint, {
@@ -74,6 +74,7 @@ export class Vpc extends pulumi.ComponentResource {
 				enabled: false,
 			},
 			splitTunnel: true,
+			vpcId: this.vpc.vpc.id,
 			securityGroupIds: [this.endpointSecurityGroup.securityGroup.id],
 		});
 

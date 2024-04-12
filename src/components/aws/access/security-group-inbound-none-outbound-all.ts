@@ -26,21 +26,12 @@ export class SecurityGroupInboundNoneOutboundAll extends pulumi.ComponentResourc
 			{
 				name: securityGroupName,
 				vpcId: opts.vpcId,
-				description: "Allow http traffic from another security group",
+				description: "No traffic in, allow all traffic out",
 			},
 			{ parent: this },
 		);
 
 		new aws.vpc.SecurityGroupEgressRule(
-			`${securityGroupName}-egressrule-alltraffic-ipv4`,
-			{
-				securityGroupId: this.securityGroup.id,
-				cidrIpv4: "0.0.0.0/0",
-				ipProtocol: "-1",
-			},
-		);
-
-		new aws.vpc.SecurityGroupIngressRule(
 			`${securityGroupName}-egressrule-alltraffic-ipv4`,
 			{
 				securityGroupId: this.securityGroup.id,
