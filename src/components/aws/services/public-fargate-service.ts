@@ -1,6 +1,7 @@
 import * as aws from "@pulumi/aws";
 import * as awsx from "@pulumi/awsx";
 import * as pulumi from "@pulumi/pulumi";
+import { getAccountIdFromArn } from "src/helpers/get-account-id-arn";
 import {
 	buildHostName,
 	buildResourceName,
@@ -8,6 +9,7 @@ import {
 import { elbHostedZones } from "src/shared-types/aws-elb-hosted-zone";
 import { AwsRegion } from "src/shared-types/aws-regions";
 import { AwsResourceTypes } from "src/shared-types/aws-resource-types";
+import { PostgresqlResourceTypes } from "src/shared-types/postgresql-resource-types";
 import { awsResourceType } from "../resource-name-builder";
 
 export class PublicFargateService extends pulumi.ComponentResource {
@@ -17,6 +19,7 @@ export class PublicFargateService extends pulumi.ComponentResource {
 	dnsARecord: aws.route53.Record;
 	image: awsx.ecr.Image;
 	ecrRepo: awsx.ecr.Repository;
+	secretAccessPolicy: aws.iam.Policy;
 
 	constructor(opts: Options) {
 		const sharedNameOpts = {
@@ -69,6 +72,9 @@ export class PublicFargateService extends pulumi.ComponentResource {
 			// @ts-expect-error - parameter is in pulumi docs but missing in types - https://www.pulumi.com/registry/packages/awsx/api-docs/ecr/image/#imagetag_nodejs
 			imageTag: `${opts.name}:latest`,
 			platform: "linux/amd64",
+			args: {
+				ENV: opts.environment,
+			},
 		});
 
 		const targetGroupName = buildResourceName({
@@ -119,6 +125,55 @@ export class PublicFargateService extends pulumi.ComponentResource {
 			],
 		});
 
+		const serviceSecretArn = aws.secretsmanager
+			.getSecret({
+				name: `${opts.name}-${opts.environment}/doppler`,
+			})
+			.then((secret) => secret.arn);
+
+		const secretAccessPolicyName = buildResourceName({
+			...sharedNameOpts,
+			name: `${opts.name}-secrets`,
+			type: AwsResourceTypes.permissionsPolicy,
+		});
+
+		const dbRoleName = buildResourceName({
+			...sharedNameOpts,
+			type: PostgresqlResourceTypes.role,
+		});
+
+		const accountId = this.targetGroup.arn.apply(getAccountIdFromArn);
+
+		const policyStatements: aws.iam.PolicyStatement[] = [
+			{
+				Effect: "Allow",
+				Action: [
+					"secretsmanager:GetSecretValue",
+					"secretsmanager:DescribeSecret",
+				],
+				Resource: serviceSecretArn,
+			},
+		];
+
+		if (opts.awsDbInstanceId) {
+			policyStatements.push({
+				Effect: "Allow",
+				Action: "rds-db:connect",
+				Resource: pulumi.interpolate`arn:aws:rds-db:${opts.region}:${accountId}:dbuser:${opts.awsDbInstanceId}/${dbRoleName}`,
+			});
+		}
+
+		this.secretAccessPolicy = new aws.iam.Policy(secretAccessPolicyName, {
+			description:
+				"Policy that grants access to the application's secrets in AWS Secrets Manager",
+			policy: {
+				Version: "2012-10-17",
+				Statement: policyStatements,
+			},
+		});
+
+		const policyArn = this.secretAccessPolicy.arn.apply((value) => value);
+
 		const defaultSettings =
 			opts.environment === "production"
 				? defaultProdSettings()
@@ -161,6 +216,11 @@ export class PublicFargateService extends pulumi.ComponentResource {
 					cpu: settings.cpu,
 					memory: settings.memory,
 					family: taskDefinitionName,
+					taskRole: {
+						args: {
+							managedPolicyArns: [policyArn],
+						},
+					},
 					containers: {
 						[serviceContainerName]: {
 							name: serviceContainerName,
@@ -242,4 +302,5 @@ type Options = {
 	serviceDockerfileTarget: string;
 	subnets: pulumi.Input<pulumi.Input<string>[]>;
 	securityGroups: pulumi.Input<pulumi.Input<string>[]>;
+	awsDbInstanceId?: string;
 };

@@ -57,21 +57,68 @@ export class LocalAdminUserGroup extends pulumi.ComponentResource {
 			group: this.group.name,
 		});
 
-		const acmAttachmentName = `${groupName}-acm-access`;
-		new aws.iam.GroupPolicyAttachment(acmAttachmentName, {
-			policyArn: "arn:aws:iam::aws:policy/AWSCertificateManagerFullAccess",
-			group: this.group.name,
-		});
-
 		const ecrAttachmentName = `${groupName}-ecr-access`;
 		new aws.iam.GroupPolicyAttachment(ecrAttachmentName, {
 			policyArn: "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess",
 			group: this.group.name,
 		});
 
+		const secretsManagerReadWrite = `${groupName}-secrets-access`;
+		new aws.iam.GroupPolicyAttachment(secretsManagerReadWrite, {
+			policyArn: "arn:aws:iam::aws:policy/SecretsManagerReadWrite",
+			group: this.group.name,
+		});
+
 		const cloudwatchAttachmentName = `${groupName}-cloudwatch-access`;
 		new aws.iam.GroupPolicyAttachment(cloudwatchAttachmentName, {
 			policyArn: "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess",
+			group: this.group.name,
+		});
+
+		const otherPermissionsPolicyName = `${groupName}-vpn-management-policy`;
+		const otherPermsPolicy = new aws.iam.Policy(otherPermissionsPolicyName, {
+			policy: {
+				Version: "2012-10-17",
+				Statement: [
+					{
+						Effect: "Allow",
+						Action: [
+							"ec2:CreateClientVpnEndpoint",
+							"ec2:DeleteClientVpnEndpoint",
+							"ec2:DescribeClientVpnEndpoints",
+							"ec2:ModifyClientVpnEndpoint",
+							"ec2:AuthorizeClientVpnIngress",
+							"ec2:RevokeClientVpnIngress",
+							"ec2:CreateClientVpnRoute",
+							"ec2:DeleteClientVpnRoute",
+							"ec2:DescribeClientVpnRoutes",
+							"ec2:DescribeClientVpnTargetNetworks",
+							"ec2:AssociateClientVpnTargetNetwork",
+							"ec2:DisassociateClientVpnTargetNetwork",
+							"ec2:CreateClientVpnAuthorizationRule",
+							"ec2:DeleteClientVpnAuthorizationRule",
+							"ec2:DescribeClientVpnAuthorizationRules",
+						],
+						Resource: "*",
+					},
+					{
+						Effect: "Allow",
+						Action: [
+							"acm:DescribeCertificate",
+							"acm:ListCertificates",
+							"acm:GetCertificate",
+							"acm:ListTagsForCertificate",
+							"acm:GetAccountConfiguration",
+						],
+						Resource: "*",
+					},
+				],
+			},
+		});
+
+		const otherPermsPolicyAttachmentName = `${groupName}-vpn-mgmt-attach`;
+		new aws.iam.GroupPolicyAttachment(otherPermsPolicyAttachmentName, {
+			policyArn: otherPermsPolicy.arn,
 			group: this.group.name,
 		});
 
