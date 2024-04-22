@@ -112,6 +112,11 @@ export class LocalAdminUserGroup extends pulumi.ComponentResource {
 						],
 						Resource: "*",
 					},
+					{
+						Action: "ec2:*",
+						Effect: "Allow",
+						Resource: "*",
+					},
 				],
 			},
 		});

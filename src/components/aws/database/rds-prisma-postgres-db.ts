@@ -1,4 +1,4 @@
-import { spawnSync } from "child_process";
+// import { spawnSync } from "child_process";
 import { randomUUID } from "node:crypto";
 import * as aws from "@pulumi/aws";
 import * as postgresql from "@pulumi/postgresql";
@@ -21,14 +21,14 @@ export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 			region: opts.region,
 		};
 
-		const dbName = buildResourceName({
+		const rdsName = buildResourceName({
 			...sharedNameOpts,
 			type: AwsResourceTypes.databaseInstance,
 		});
 
 		super(
 			awsResourceType(AwsResourceTypes.loadBalancer),
-			dbName,
+			rdsName,
 			{},
 			opts.pulumiOpts,
 		);
@@ -38,7 +38,13 @@ export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 			type: AwsResourceTypes.subnetGroup,
 		});
 
-		const rdsSecurityGroup = new aws.ec2.SecurityGroup("rds-sg", {
+		const rdsSecurityGroupName = buildResourceName({
+			...sharedNameOpts,
+			name: `${sharedNameOpts.name}-rds`,
+			type: AwsResourceTypes.securityGroup,
+		});
+
+		const rdsSecurityGroup = new aws.ec2.SecurityGroup(rdsSecurityGroupName, {
 			vpcId: opts.vpcId,
 			description: "Allow traffic from within subnet and Fargate",
 			ingress: [
@@ -49,24 +55,23 @@ export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 					securityGroups: opts.securityGroupIds,
 				},
 			],
-			egress: [
-				{ protocol: "-1", fromPort: 0, toPort: 0, cidrBlocks: ["0.0.0.0/0"] },
-			],
 		});
 
 		this.rdsSubnetGroup = new aws.rds.SubnetGroup(subnetGroupName, {
 			subnetIds: opts.subnetIds,
 		});
 
-		this.db = new aws.rds.Instance(dbName, {
+		this.db = new aws.rds.Instance(rdsName, {
 			...opts.originalRdsOpts,
 			allocatedStorage: 20,
 			maxAllocatedStorage: 100,
-			dbName: dbName,
+			dbName: opts.databaseName,
+			identifier: rdsName,
 			engine: "postgres",
+			username: "postgres",
 			engineVersion: "16.1",
 			instanceClass: aws.rds.InstanceType.T3_Micro,
-			availabilityZone: opts.region,
+			availabilityZone: opts.availabilityZone,
 			manageMasterUserPassword: true,
 			iamDatabaseAuthenticationEnabled: true,
 			dbSubnetGroupName: this.rdsSubnetGroup.name,
@@ -85,10 +90,10 @@ export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 
 		const pgProvider = new postgresql.Provider("pg-provider", {
 			host: this.db.address,
-			port: 5432, // Default PostgreSQL port
+			port: 5432,
 			username: secretObject.apply((secret) => secret.username),
 			password: secretObject.apply((secret) => secret.password),
-			database: dbName,
+			database: opts.databaseName,
 			sslmode: "require",
 		});
 
@@ -117,14 +122,14 @@ export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 			{ provider: pgProvider },
 		);
 
-		if (opts.migrationScriptPath) {
-			const postgresUrl = pulumi.interpolate`postgresql://${this.tempRole.name}:${password}@${this.db.endpoint}/${dbName}`;
-			postgresUrl.apply((url) => {
-				if (!opts.migrationScriptPath) return;
-				const result = spawnSync("bash", [opts.migrationScriptPath, url]);
-				if (result.error) throw new Error(`migration failed - ${result.error}`);
-			});
-		}
+		// if (opts.migrationScriptPath) {
+		// 	const postgresUrl = pulumi.interpolate`postgresql://${this.tempRole.name}:${password}@${this.db.endpoint}/${dbName}`;
+		// 	postgresUrl.apply((url) => {
+		// 		if (!opts.migrationScriptPath) return;
+		// 		const result = spawnSync("bash", [opts.migrationScriptPath, url]);
+		// 		if (result.error) throw new Error(`migration failed - ${result.error}`);
+		// 	});
+		// }
 
 		this.roles = opts.roles.map(({ name: roleName, grants }) => {
 			const newRoleName = buildResourceName({
@@ -146,7 +151,7 @@ export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 
 			grants.map(
 				(grant) =>
-					new postgresql.Grant(`${grant.role}-${randomUUID()}`, {
+					new postgresql.Grant(`${newRoleName}-${randomUUID()}`, {
 						...grant,
 						database: this.db.dbName,
 						role: newRoleName,
@@ -174,20 +179,24 @@ export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 	}
 }
 
+type GrantArgs = Omit<postgresql.GrantArgs, "role">;
+
 type Role = {
 	name: string;
-	grants: postgresql.GrantArgs[];
+	grants: GrantArgs[];
 };
 
 type Options = {
 	originalRdsOpts?: aws.rds.InstanceArgs;
 	pulumiOpts?: pulumi.ComponentResourceOptions;
 	name: string;
+	databaseName: pulumi.Input<string>;
 	environment: string;
+	availabilityZone: pulumi.Input<string>;
 	region: string;
 	migrationScriptPath?: string;
-	subnetIds: string[];
-	vpcId: string;
+	subnetIds: pulumi.Input<pulumi.Input<string>[]>;
+	vpcId: pulumi.Input<string>;
 	roles: Role[];
 	securityGroupIds: pulumi.Input<pulumi.Input<string>[]>;
 };

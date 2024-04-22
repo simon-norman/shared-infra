@@ -1,6 +1,7 @@
 export enum AwsResourceTypes {
 	vpc = "vpc",
 	vpnEndpoint = "vpn-endpoint",
+	ec2 = "ec2",
 	vpnAuthRule = "vpn-auth-rule",
 	networkAssociation = "network-association",
 	cluster = "cluster",
