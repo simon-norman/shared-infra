@@ -9,7 +9,6 @@ import {
 import { elbHostedZones } from "src/shared-types/aws-elb-hosted-zone";
 import { AwsRegion } from "src/shared-types/aws-regions";
 import { AwsResourceTypes } from "src/shared-types/aws-resource-types";
-import { PostgresqlResourceTypes } from "src/shared-types/postgresql-resource-types";
 import { awsResourceType } from "../resource-name-builder";
 
 export class PublicFargateService extends pulumi.ComponentResource {
