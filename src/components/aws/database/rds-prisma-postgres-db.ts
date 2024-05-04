@@ -1,6 +1,6 @@
-// import { spawnSync } from "child_process";
 import { randomUUID } from "node:crypto";
 import * as aws from "@pulumi/aws";
+import { local } from "@pulumi/command";
 import * as postgresql from "@pulumi/postgresql";
 import * as pulumi from "@pulumi/pulumi";
 import { buildResourceName } from "src/helpers/resource-name-builder";
@@ -11,7 +11,6 @@ import { awsResourceType } from "../resource-name-builder";
 export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 	db: aws.rds.Instance;
 	rdsSubnetGroup: aws.rds.SubnetGroup;
-	tempRole: postgresql.Role;
 	roles: Array<{ originalName: string; role: postgresql.Role }> = [];
 
 	constructor(opts: Options) {
@@ -88,48 +87,36 @@ export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 
 		const secretObject = pulumi.jsonParse(masterSecretString);
 
-		const pgProvider = new postgresql.Provider("pg-provider", {
-			host: this.db.address,
-			port: 5432,
-			username: secretObject.apply((secret) => secret.username),
-			password: secretObject.apply((secret) => secret.password),
-			database: opts.databaseName,
-			sslmode: "require",
-		});
-
-		const tempRoleName = buildResourceName({
-			...sharedNameOpts,
-			type: PostgresqlResourceTypes.role,
-		});
-
-		const password = randomUUID();
-
-		const now = new Date();
-		const futureDate = new Date(now.getTime() + 30 * 60000);
-		const futureDatePostgresFormat = futureDate
-			.toISOString()
-			.replace("T", " ")
-			.replace("Z", "");
-
-		this.tempRole = new postgresql.Role(
-			tempRoleName,
+		const pgProvider = new postgresql.Provider(
+			"pg-provider",
 			{
-				login: true,
-				name: `${tempRoleName}-${randomUUID()}`,
-				password: password,
-				validUntil: futureDatePostgresFormat,
+				host: this.db.address,
+				port: 5432,
+				username: secretObject.apply((secret) => secret.username),
+				password: secretObject.apply((secret) => secret.password),
+				database: opts.databaseName,
+				sslmode: "require",
+				superuser: false,
 			},
-			{ provider: pgProvider },
+			{ dependsOn: [this.db] },
 		);
 
-		// if (opts.migrationScriptPath) {
-		// 	const postgresUrl = pulumi.interpolate`postgresql://${this.tempRole.name}:${password}@${this.db.endpoint}/${dbName}`;
-		// 	postgresUrl.apply((url) => {
-		// 		if (!opts.migrationScriptPath) return;
-		// 		const result = spawnSync("bash", [opts.migrationScriptPath, url]);
-		// 		if (result.error) throw new Error(`migration failed - ${result.error}`);
-		// 	});
-		// }
+		const migrationScriptCommand = pulumi.interpolate`bash ${
+			opts.migrationScriptPath || ""
+		} 'postgresql://${secretObject.apply(
+			(secret) => secret.username,
+		)}:${secretObject.apply((secret) => secret.password)}@${this.db.endpoint}/${
+			opts.databaseName
+		}'`;
+
+		const migrationCommand = new local.Command(
+			"postgres-migration-command",
+			{
+				create: migrationScriptCommand,
+				triggers: [randomUUID()],
+			},
+			{ dependsOn: pgProvider },
+		);
 
 		this.roles = opts.roles.map(({ name: roleName, grants }) => {
 			const newRoleName = buildResourceName({
@@ -143,31 +130,40 @@ export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 				{
 					login: true,
 					name: newRoleName,
-					password: password,
-					validUntil: futureDatePostgresFormat,
+					// as using rds AWS IAM authentication, the password is irrelevant and postgres will not accept login with
+					// the password
+					password: "",
 				},
-				{ provider: pgProvider },
+				{ provider: pgProvider, dependsOn: [migrationCommand] },
 			);
 
 			grants.map(
 				(grant) =>
-					new postgresql.Grant(`${newRoleName}-${randomUUID()}`, {
-						...grant,
-						database: this.db.dbName,
-						role: newRoleName,
-					}),
+					new postgresql.Grant(
+						`${newRoleName}-grant-${grant.grantName}`,
+						{
+							...grant,
+							database: this.db.dbName,
+							role: newRoleName,
+						},
+						{ dependsOn: [migrationCommand], provider: pgProvider },
+					),
 			);
 
 			const roleGrantName = buildResourceName({
 				...sharedNameOpts,
-				name: `${roleName}-iam`,
+				name: `${roleName}-aws-iam`,
 				type: PostgresqlResourceTypes.roleGrant,
 			});
 
-			new postgresql.GrantRole(roleGrantName, {
-				grantRole: "rds_iam",
-				role: newRoleName,
-			});
+			new postgresql.GrantRole(
+				roleGrantName,
+				{
+					grantRole: "rds_iam",
+					role: newRoleName,
+				},
+				{ provider: pgProvider, dependsOn: [migrationCommand] },
+			);
 
 			return {
 				role,
@@ -179,7 +175,9 @@ export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 	}
 }
 
-type GrantArgs = Omit<postgresql.GrantArgs, "role">;
+type GrantArgs = Omit<postgresql.GrantArgs, "role"> & {
+	grantName: pulumi.Input<string>;
+};
 
 type Role = {
 	name: string;

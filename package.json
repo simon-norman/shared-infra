@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@pulumi/awsx": "2.5.0",
+    "@pulumi/command": "^0.10.0",
     "@pulumi/digitalocean": "4.25.1",
     "@pulumi/postgresql": "^3.11.0",
     "@pulumi/pulumi": "3.104.2"

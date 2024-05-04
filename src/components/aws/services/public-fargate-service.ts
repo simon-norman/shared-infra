@@ -137,11 +137,6 @@ export class PublicFargateService extends pulumi.ComponentResource {
 			type: AwsResourceTypes.permissionsPolicy,
 		});
 
-		const dbRoleName = buildResourceName({
-			...sharedNameOpts,
-			type: PostgresqlResourceTypes.role,
-		});
-
 		const accountId = this.targetGroup.arn.apply(getAccountIdFromArn);
 
 		const policyStatements: aws.iam.PolicyStatement[] = [
@@ -155,11 +150,11 @@ export class PublicFargateService extends pulumi.ComponentResource {
 			},
 		];
 
-		if (opts.awsDbInstanceId) {
+		if (opts.db) {
 			policyStatements.push({
 				Effect: "Allow",
 				Action: "rds-db:connect",
-				Resource: pulumi.interpolate`arn:aws:rds-db:${opts.region}:${accountId}:dbuser:${opts.awsDbInstanceId}/${dbRoleName}`,
+				Resource: pulumi.interpolate`arn:aws:rds-db:${opts.region}:${accountId}:dbuser:${opts.db.awsDbInstanceId}/${opts.db.dbRoleName}`,
 			});
 		}
 
@@ -302,5 +297,8 @@ type Options = {
 	serviceDockerfileTarget: string;
 	subnets: pulumi.Input<pulumi.Input<string>[]>;
 	securityGroups: pulumi.Input<pulumi.Input<string>[]>;
-	awsDbInstanceId?: string;
+	db?: {
+		dbRoleName: pulumi.Input<string>;
+		awsDbInstanceId: pulumi.Input<string>;
+	};
 };
