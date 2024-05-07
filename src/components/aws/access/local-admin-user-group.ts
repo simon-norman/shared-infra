@@ -106,6 +106,7 @@ export class LocalAdminUserGroup extends pulumi.ComponentResource {
 						Action: [
 							"acm:DescribeCertificate",
 							"acm:ListCertificates",
+							"acm:DeleteCertificate",
 							"acm:GetCertificate",
 							"acm:ListTagsForCertificate",
 							"acm:GetAccountConfiguration",
