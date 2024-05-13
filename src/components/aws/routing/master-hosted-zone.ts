@@ -30,8 +30,6 @@ export class MasterHostedZone extends pulumi.ComponentResource {
 			{ parent: this },
 		);
 
-		this.zone.nameServers;
-
 		this.registerOutputs();
 	}
 }

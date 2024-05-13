@@ -3,7 +3,7 @@ import * as aws from "@pulumi/aws";
 import { local } from "@pulumi/command";
 import * as postgresql from "@pulumi/postgresql";
 import * as pulumi from "@pulumi/pulumi";
-import { buildComponentName } from "src/helpers";
+import { SharedNameOptions, buildComponentName } from "src/helpers";
 import { buildResourceName } from "src/helpers/resource-name-builder";
 import { AwsResourceTypes } from "src/shared-types/aws-resource-types";
 import { BaseComponentInput } from "src/shared-types/component-input";
@@ -22,18 +22,53 @@ export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 
 		super(AwsResourceTypes.databaseInstance, rdsName, {}, opts.pulumiOpts);
 
-		const subnetGroupName = buildResourceName({
-			...sharedNameOpts,
-			type: AwsResourceTypes.subnetGroup,
-		});
+		const { rds, rdsSubnetGroup } = this.createRdsInstance(opts, rdsName);
+		this.db = rds;
+		this.rdsSubnetGroup = rdsSubnetGroup;
 
+		const secretObject = this.getRdsMasterSecret(this.db);
+
+		const pgProvider = new postgresql.Provider(
+			"pg-provider",
+			{
+				host: this.db.address,
+				port: 5432,
+				username: secretObject.apply((secret) => secret.username),
+				password: secretObject.apply((secret) => secret.password),
+				database: opts.databaseName,
+				sslmode: "require",
+				superuser: false,
+			},
+			{ dependsOn: [this.db] },
+		);
+
+		const migrationCommand = this.runDbMigration(
+			opts,
+			secretObject,
+			pgProvider,
+			this.db,
+		);
+
+		this.roles = opts.roles.map((role) =>
+			this.addRoleToDatabase(role, {
+				sharedNameOpts,
+				pgProvider,
+				migrationCommand,
+				db: this.db,
+			}),
+		);
+
+		this.registerOutputs();
+	}
+
+	private createSecurityGroup = (opts: Options) => {
 		const rdsSecurityGroupName = buildResourceName({
-			...sharedNameOpts,
-			name: `${sharedNameOpts.name}-rds`,
+			...opts,
+			name: `${opts.name}-rds`,
 			type: AwsResourceTypes.securityGroup,
 		});
 
-		const rdsSecurityGroup = new aws.ec2.SecurityGroup(rdsSecurityGroupName, {
+		return new aws.ec2.SecurityGroup(rdsSecurityGroupName, {
 			vpcId: opts.vpcId,
 			description: "Allow traffic from within subnet and Fargate",
 			ingress: [
@@ -45,12 +80,21 @@ export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 				},
 			],
 		});
+	};
 
-		this.rdsSubnetGroup = new aws.rds.SubnetGroup(subnetGroupName, {
+	private createRdsInstance = (opts: Options, rdsName: string) => {
+		const subnetGroupName = buildResourceName({
+			...opts,
+			type: AwsResourceTypes.subnetGroup,
+		});
+
+		const rdsSecurityGroup = this.createSecurityGroup(opts);
+
+		const rdsSubnetGroup = new aws.rds.SubnetGroup(subnetGroupName, {
 			subnetIds: opts.subnetIds,
 		});
 
-		this.db = new aws.rds.Instance(rdsName, {
+		const rds = new aws.rds.Instance(rdsName, {
 			...opts.originalRdsOpts,
 			allocatedStorage: 20,
 			maxAllocatedStorage: 100,
@@ -67,7 +111,11 @@ export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 			vpcSecurityGroupIds: [rdsSecurityGroup.id],
 		});
 
-		const masterSecretString = this.db.masterUserSecrets.apply((secret) => {
+		return { rds, rdsSubnetGroup };
+	};
+
+	private getRdsMasterSecret = (db: aws.rds.Instance) => {
+		const masterSecretString = db.masterUserSecrets.apply((secret) => {
 			const masterSecret = aws.secretsmanager.getSecretVersion({
 				secretId: secret[0].secretArn,
 			});
@@ -75,31 +123,28 @@ export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 			return masterSecret.then((secret) => secret.secretString);
 		});
 
-		const secretObject = pulumi.jsonParse(masterSecretString);
+		const secretObject: ParsedSecret = pulumi.jsonParse(
+			masterSecretString,
+		) as ParsedSecret;
 
-		const pgProvider = new postgresql.Provider(
-			"pg-provider",
-			{
-				host: this.db.address,
-				port: 5432,
-				username: secretObject.apply((secret) => secret.username),
-				password: secretObject.apply((secret) => secret.password),
-				database: opts.databaseName,
-				sslmode: "require",
-				superuser: false,
-			},
-			{ dependsOn: [this.db] },
-		);
+		return secretObject;
+	};
 
+	private runDbMigration = (
+		opts: Options,
+		secretObject: pulumi.Output<{ username: string; password: string }>,
+		pgProvider: postgresql.Provider,
+		db: aws.rds.Instance,
+	) => {
 		const migrationScriptCommand = pulumi.interpolate`bash ${
 			opts.migrationScriptPath || ""
 		} 'postgresql://${secretObject.apply(
 			(secret) => secret.username,
-		)}:${secretObject.apply((secret) => secret.password)}@${this.db.endpoint}/${
+		)}:${secretObject.apply((secret) => secret.password)}@${db.endpoint}/${
 			opts.databaseName
 		}'`;
 
-		const migrationCommand = new local.Command(
+		return new local.Command(
 			"postgres-migration-command",
 			{
 				create: migrationScriptCommand,
@@ -107,63 +152,91 @@ export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 			},
 			{ dependsOn: pgProvider },
 		);
+	};
 
-		this.roles = opts.roles.map(({ name: roleName, grants }) => {
-			const newRoleName = buildResourceName({
-				...sharedNameOpts,
-				name: roleName,
-				type: PostgresqlResourceTypes.role,
-			});
+	private addRoleToDatabase = (role: Role, roleParams: RoleParams) => {
+		const { name: baseRoleName, grants } = role;
 
-			const role = new postgresql.Role(
-				newRoleName,
-				{
-					login: true,
-					name: newRoleName,
-					// as using rds AWS IAM authentication, the password is irrelevant and postgres will not accept login with
-					// the password
-					password: "",
-				},
-				{ provider: pgProvider, dependsOn: [migrationCommand] },
-			);
-
-			grants.map(
-				(grant) =>
-					new postgresql.Grant(
-						`${newRoleName}-grant-${grant.grantName}`,
-						{
-							...grant,
-							database: this.db.dbName,
-							role: newRoleName,
-						},
-						{ dependsOn: [migrationCommand], provider: pgProvider },
-					),
-			);
-
-			const roleGrantName = buildResourceName({
-				...sharedNameOpts,
-				name: `${roleName}-aws-iam`,
-				type: PostgresqlResourceTypes.roleGrant,
-			});
-
-			new postgresql.GrantRole(
-				roleGrantName,
-				{
-					grantRole: "rds_iam",
-					role: newRoleName,
-				},
-				{ provider: pgProvider, dependsOn: [migrationCommand] },
-			);
-
-			return {
-				role,
-				originalName: roleName,
-			};
+		const fullRoleName = buildResourceName({
+			...roleParams.sharedNameOpts,
+			name: baseRoleName,
+			type: PostgresqlResourceTypes.role,
 		});
 
-		this.registerOutputs();
+		const newRole = new postgresql.Role(
+			fullRoleName,
+			{
+				login: true,
+				name: fullRoleName,
+				// as using rds AWS IAM authentication, the password is irrelevant and postgres will not accept login with
+				// the password
+				password: "",
+			},
+			{
+				provider: roleParams.pgProvider,
+				dependsOn: [roleParams.migrationCommand],
+			},
+		);
+
+		grants.map(
+			(grant) =>
+				new postgresql.Grant(
+					`${fullRoleName}-grant-${grant.grantName}`,
+					{
+						...grant,
+						database: roleParams.db.dbName,
+						role: fullRoleName,
+					},
+					{
+						dependsOn: [roleParams.migrationCommand],
+						provider: roleParams.pgProvider,
+					},
+				),
+		);
+
+		this.addIamGrantToRole(roleParams, baseRoleName, fullRoleName);
+
+		return {
+			role: newRole,
+			originalName: baseRoleName,
+		};
+	};
+
+	/**
+	 * Adds the AWS RDS IAM role to this role, which enables it to access the database with iam auth rather than
+	 * username / password (more secure)
+	 */
+	private addIamGrantToRole(
+		roleParams: RoleParams,
+		baseRoleName: string,
+		fullRoleName: string,
+	) {
+		const roleGrantName = buildResourceName({
+			...roleParams.sharedNameOpts,
+			name: `${baseRoleName}-aws-iam`,
+			type: PostgresqlResourceTypes.roleGrant,
+		});
+
+		new postgresql.GrantRole(
+			roleGrantName,
+			{
+				grantRole: "rds_iam",
+				role: fullRoleName,
+			},
+			{
+				provider: roleParams.pgProvider,
+				dependsOn: [roleParams.migrationCommand],
+			},
+		);
 	}
 }
+
+type RoleParams = {
+	sharedNameOpts: SharedNameOptions;
+	pgProvider: postgresql.Provider;
+	migrationCommand: local.Command;
+	db: aws.rds.Instance;
+};
 
 type GrantArgs = Omit<postgresql.GrantArgs, "role"> & {
 	grantName: pulumi.Input<string>;
@@ -173,6 +246,8 @@ type Role = {
 	name: string;
 	grants: GrantArgs[];
 };
+
+type ParsedSecret = pulumi.Output<{ username: string; password: string }>;
 
 type Options = BaseComponentInput & {
 	originalRdsOpts?: aws.rds.InstanceArgs;

@@ -3,7 +3,6 @@ import * as pulumi from "@pulumi/pulumi";
 import { buildComponentName } from "src/helpers";
 import { AwsResourceTypes } from "src/shared-types/aws-resource-types";
 import { BaseComponentInput } from "src/shared-types/component-input";
-import { awsResourceType } from "../resource-name-builder";
 
 export class SecurityGroupInboundPrivateOutboundAll extends pulumi.ComponentResource {
 	securityGroup: aws.ec2.SecurityGroup;
