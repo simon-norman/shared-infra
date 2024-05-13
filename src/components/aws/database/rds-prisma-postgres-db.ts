@@ -8,7 +8,6 @@ import { buildResourceName } from "src/helpers/resource-name-builder";
 import { AwsResourceTypes } from "src/shared-types/aws-resource-types";
 import { BaseComponentInput } from "src/shared-types/component-input";
 import { PostgresqlResourceTypes } from "src/shared-types/postgresql-resource-types";
-import { awsResourceType } from "../resource-name-builder";
 
 export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 	db: aws.rds.Instance;
