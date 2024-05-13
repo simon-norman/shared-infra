@@ -2,7 +2,6 @@ import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
 import { buildProjectWideResourceName } from "src/helpers/resource-name-builder";
 import { AwsResourceTypes } from "src/shared-types/aws-resource-types";
-import { awsResourceType } from "../resource-name-builder";
 
 export class CiCdUserGroup extends pulumi.ComponentResource {
 	group: aws.iam.Group;
@@ -12,12 +11,8 @@ export class CiCdUserGroup extends pulumi.ComponentResource {
 			type: AwsResourceTypes.userGroup,
 			name: "ci-cd-user-group",
 		});
-		super(
-			awsResourceType(AwsResourceTypes.userGroup),
-			groupName,
-			{},
-			opts.pulumiOpts,
-		);
+
+		super(AwsResourceTypes.userGroup, groupName, {}, opts.pulumiOpts);
 
 		this.group = new aws.iam.Group(groupName, {});
 

@@ -1,6 +1,7 @@
 import * as aws from "@pulumi/aws";
 import * as awsx from "@pulumi/awsx";
 import * as pulumi from "@pulumi/pulumi";
+import { buildComponentName } from "src/helpers";
 import { getAccountIdFromArn } from "src/helpers/get-account-id-arn";
 import {
 	buildHostName,
@@ -9,6 +10,7 @@ import {
 import { elbHostedZones } from "src/shared-types/aws-elb-hosted-zone";
 import { AwsRegion } from "src/shared-types/aws-regions";
 import { AwsResourceTypes } from "src/shared-types/aws-resource-types";
+import { BaseComponentInput } from "src/shared-types/component-input";
 import { awsResourceType } from "../resource-name-builder";
 
 export class PublicFargateService extends pulumi.ComponentResource {
@@ -21,19 +23,13 @@ export class PublicFargateService extends pulumi.ComponentResource {
 	secretAccessPolicy: aws.iam.Policy;
 
 	constructor(opts: Options) {
-		const sharedNameOpts = {
-			name: opts.name,
-			environment: opts.environment,
-			region: opts.region,
-		};
-
-		const fargateServiceName = buildResourceName({
-			...sharedNameOpts,
-			type: AwsResourceTypes.fargateService,
+		const { name: fargateServiceName, sharedNameOpts } = buildComponentName({
+			...opts,
+			resourceType: AwsResourceTypes.cluster,
 		});
 
 		super(
-			awsResourceType(AwsResourceTypes.fargateService),
+			AwsResourceTypes.fargateService,
 			fargateServiceName,
 			{},
 			opts.pulumiOpts,
@@ -274,12 +270,8 @@ const defaultNonProdSettings = () => {
 	};
 };
 
-type Options = {
+type Options = BaseComponentInput & {
 	originalFargateServiceOpts?: awsx.ecs.FargateServiceArgs;
-	pulumiOpts?: pulumi.ComponentResourceOptions;
-	name: string;
-	environment: string;
-	region: string;
 	clusterArn: pulumi.Input<string>;
 	loadBalancerArn: pulumi.Input<string>;
 	vpcId: pulumi.Input<string>;

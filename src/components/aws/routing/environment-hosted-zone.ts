@@ -1,31 +1,20 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
-import { buildResourceName } from "src/helpers/resource-name-builder";
+import { buildComponentName } from "src/helpers";
 import { AwsResourceTypes } from "src/shared-types/aws-resource-types";
-import { awsResourceType } from "../resource-name-builder";
+import { BaseComponentInput } from "src/shared-types/component-input";
 import { MasterNameServerRecord } from "./name-server-record";
 
 export class EnvironmentHostedZone extends pulumi.ComponentResource {
 	zone: aws.route53.Zone;
 
 	constructor(opts: Options) {
-		const sharedNameOpts = {
-			name: opts.name,
-			environment: opts.environment,
-			region: opts.region,
-		};
-
-		const zoneName = buildResourceName({
-			...sharedNameOpts,
-			type: AwsResourceTypes.route53Zone,
+		const resourceType = AwsResourceTypes.httpsCertificate;
+		const { name: zoneName } = buildComponentName({
+			...opts,
+			resourceType,
 		});
-
-		super(
-			awsResourceType(AwsResourceTypes.route53Zone),
-			zoneName,
-			{},
-			opts.pulumiOpts,
-		);
+		super(resourceType, zoneName, {}, opts.pulumiOpts);
 
 		const domainName = `${opts.environment}.simonnorman.online`;
 
@@ -50,11 +39,7 @@ export class EnvironmentHostedZone extends pulumi.ComponentResource {
 	}
 }
 
-type Options = {
+type Options = BaseComponentInput & {
 	originalZoneOpts?: aws.route53.ZoneArgs;
-	pulumiOpts?: pulumi.ComponentResourceOptions;
-	name: string;
-	environment: string;
-	region: string;
 	masterZoneId: pulumi.Input<string>;
 };

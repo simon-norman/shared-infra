@@ -3,8 +3,10 @@ import * as aws from "@pulumi/aws";
 import { local } from "@pulumi/command";
 import * as postgresql from "@pulumi/postgresql";
 import * as pulumi from "@pulumi/pulumi";
+import { buildComponentName } from "src/helpers";
 import { buildResourceName } from "src/helpers/resource-name-builder";
 import { AwsResourceTypes } from "src/shared-types/aws-resource-types";
+import { BaseComponentInput } from "src/shared-types/component-input";
 import { PostgresqlResourceTypes } from "src/shared-types/postgresql-resource-types";
 import { awsResourceType } from "../resource-name-builder";
 
@@ -14,23 +16,12 @@ export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 	roles: Array<{ originalName: string; role: postgresql.Role }> = [];
 
 	constructor(opts: Options) {
-		const sharedNameOpts = {
-			name: opts.name,
-			environment: opts.environment,
-			region: opts.region,
-		};
-
-		const rdsName = buildResourceName({
-			...sharedNameOpts,
-			type: AwsResourceTypes.databaseInstance,
+		const { name: rdsName, sharedNameOpts } = buildComponentName({
+			...opts,
+			resourceType: AwsResourceTypes.databaseInstance,
 		});
 
-		super(
-			awsResourceType(AwsResourceTypes.loadBalancer),
-			rdsName,
-			{},
-			opts.pulumiOpts,
-		);
+		super(AwsResourceTypes.databaseInstance, rdsName, {}, opts.pulumiOpts);
 
 		const subnetGroupName = buildResourceName({
 			...sharedNameOpts,
@@ -184,14 +175,10 @@ type Role = {
 	grants: GrantArgs[];
 };
 
-type Options = {
+type Options = BaseComponentInput & {
 	originalRdsOpts?: aws.rds.InstanceArgs;
-	pulumiOpts?: pulumi.ComponentResourceOptions;
-	name: string;
 	databaseName: pulumi.Input<string>;
-	environment: string;
 	availabilityZone: pulumi.Input<string>;
-	region: string;
 	migrationScriptPath?: string;
 	subnetIds: pulumi.Input<pulumi.Input<string>[]>;
 	vpcId: pulumi.Input<string>;

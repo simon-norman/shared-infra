@@ -1,17 +1,13 @@
 import * as aws from "@pulumi/aws";
 import * as awsx from "@pulumi/awsx";
 import * as pulumi from "@pulumi/pulumi";
-import {
-	BaseRegionComponent,
-	RegionComponentOptions,
-	SharedNameOptions,
-	buildComponentName,
-} from "src/helpers";
+import { SharedNameOptions, buildComponentName } from "src/helpers";
 import { buildResourceName } from "src/helpers/resource-name-builder";
 import { AwsResourceTypes } from "src/shared-types/aws-resource-types";
+import { BaseComponentInput } from "src/shared-types/component-input";
 import { SecurityGroupInboundNoneOutboundAll } from "../access/security-group-inbound-none-outbound-all";
 
-export class Vpn extends BaseRegionComponent {
+export class Vpn extends pulumi.ComponentResource {
 	samlVpnEndpoint: aws.ec2clientvpn.Endpoint;
 	samlVpnAuthRule: aws.ec2clientvpn.AuthorizationRule;
 	endpointSecurityGroup: SecurityGroupInboundNoneOutboundAll;
@@ -20,8 +16,12 @@ export class Vpn extends BaseRegionComponent {
 	ecsForConnectivityCheck: aws.ec2.Instance;
 
 	constructor(opts: Options) {
-		const { sharedNameOpts } = buildComponentName(opts);
-		super(opts);
+		const resourceType = AwsResourceTypes.vpn;
+		const { name, sharedNameOpts } = buildComponentName({
+			...opts,
+			resourceType,
+		});
+		super(resourceType, name, {}, opts.pulumiOpts);
 
 		this.endpointSecurityGroup = new SecurityGroupInboundNoneOutboundAll({
 			...sharedNameOpts,
@@ -91,7 +91,7 @@ export class Vpn extends BaseRegionComponent {
 			},
 			splitTunnel: true,
 			vpcId: componentOpts.vpc.vpc.id,
-			securityGroupIds: [this.endpointSecurityGroup.securityGroup.id],
+			securityGroupIds: [endpointOpts.endpointSecurityGroup.securityGroup.id],
 		});
 
 		const vpnAuthRuleName = buildResourceName({
@@ -103,7 +103,7 @@ export class Vpn extends BaseRegionComponent {
 		const vpnAuthRule = new aws.ec2clientvpn.AuthorizationRule(
 			vpnAuthRuleName,
 			{
-				clientVpnEndpointId: this.certVpnEndpoint.id,
+				clientVpnEndpointId: vpnEndpoint.id,
 				targetNetworkCidr: componentOpts.vpc.vpc.cidrBlock,
 				authorizeAllGroups: true,
 			},
@@ -113,12 +113,12 @@ export class Vpn extends BaseRegionComponent {
 			subnetIds.map((subnetId) => {
 				const networkAssociationName = buildResourceName({
 					...sharedNameOpts,
-					name: `${componentOpts.name}-${subnetId}-cert`,
+					name: `${componentOpts.name}-${subnetId}-${endpointOpts.subtype}`,
 					type: AwsResourceTypes.networkAssociation,
 				});
 
 				return new aws.ec2clientvpn.NetworkAssociation(networkAssociationName, {
-					clientVpnEndpointId: this.certVpnEndpoint.id,
+					clientVpnEndpointId: vpnEndpoint.id,
 					subnetId,
 				});
 			}),
@@ -180,7 +180,7 @@ type EndpointOptions = {
 	subtype: string;
 };
 
-type Options = RegionComponentOptions & {
+type Options = BaseComponentInput & {
 	samlVpnEndpointServerCertificateArn: pulumi.Input<string>;
 	sslVpnEndpointServerCertificateArn: pulumi.Input<string>;
 	sslVpnEndpointClientCertificateArn: pulumi.Input<string>;

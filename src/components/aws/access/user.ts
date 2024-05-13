@@ -2,7 +2,6 @@ import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
 import { buildProjectWideResourceName } from "src/helpers/resource-name-builder";
 import { AwsResourceTypes } from "src/shared-types/aws-resource-types";
-import { awsResourceType } from "../resource-name-builder";
 
 export class User extends pulumi.ComponentResource {
 	user: aws.iam.User;
@@ -14,12 +13,8 @@ export class User extends pulumi.ComponentResource {
 			type: AwsResourceTypes.user,
 			name: userName,
 		});
-		super(
-			awsResourceType(AwsResourceTypes.user),
-			userResourceName,
-			{},
-			opts.pulumiOpts,
-		);
+
+		super(AwsResourceTypes.user, userResourceName, {}, opts.pulumiOpts);
 
 		this.user = new aws.iam.User(userResourceName, {
 			name: userName,

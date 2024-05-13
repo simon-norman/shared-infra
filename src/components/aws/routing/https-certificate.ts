@@ -1,36 +1,26 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
+import { buildComponentName } from "src/helpers";
 import { buildResourceName } from "src/helpers/resource-name-builder";
 import { AwsResourceTypes } from "src/shared-types/aws-resource-types";
-import { awsResourceType } from "../resource-name-builder";
+import { BaseComponentInput } from "src/shared-types/component-input";
 
 export class HttpsCertificate extends pulumi.ComponentResource {
 	certificate: aws.acm.Certificate;
 	certificateArn: pulumi.Output<string>;
 
-	constructor(opts: Options) {
-		const sharedNameOpts = {
-			name: opts.name,
-			environment: opts.environment,
-			region: opts.region,
-		};
-
-		const certificateName = buildResourceName({
-			...sharedNameOpts,
-			type: AwsResourceTypes.httpsCertificate,
+	constructor(opts: HttpsCertOptions) {
+		const resourceType = AwsResourceTypes.httpsCertificate;
+		const { name } = buildComponentName({
+			...opts,
+			resourceType,
 		});
-
-		super(
-			awsResourceType(AwsResourceTypes.httpsCertificate),
-			certificateName,
-			{},
-			opts.pulumiOpts,
-		);
+		super(resourceType, name, {}, opts.pulumiOpts);
 
 		const domainName = `*.${opts.environment}.simonnorman.online`;
 
 		this.certificate = new aws.acm.Certificate(
-			certificateName,
+			name,
 			{
 				domainName: domainName,
 				validationMethod: "DNS",
@@ -70,11 +60,7 @@ export class HttpsCertificate extends pulumi.ComponentResource {
 	}
 }
 
-type Options = {
+type HttpsCertOptions = BaseComponentInput & {
 	originalCertificateOpts?: aws.acm.CertificateArgs;
-	pulumiOpts?: pulumi.ComponentResourceOptions;
-	name: string;
-	environment: string;
-	region: string;
 	route53ZoneId: pulumi.Input<string>;
 };

@@ -12,12 +12,7 @@ export class LocalAdminUserGroup extends pulumi.ComponentResource {
 			type: AwsResourceTypes.userGroup,
 			name: "local-admin",
 		});
-		super(
-			awsResourceType(AwsResourceTypes.userGroup),
-			groupName,
-			{},
-			opts.pulumiOpts,
-		);
+		super(AwsResourceTypes.userGroup, groupName, {}, opts.pulumiOpts);
 
 		this.group = new aws.iam.Group(groupName, {});
 
@@ -110,6 +105,7 @@ export class LocalAdminUserGroup extends pulumi.ComponentResource {
 							"acm:GetCertificate",
 							"acm:ListTagsForCertificate",
 							"acm:GetAccountConfiguration",
+							"acm:RequestCertificate",
 						],
 						Resource: "*",
 					},

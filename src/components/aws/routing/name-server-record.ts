@@ -2,7 +2,6 @@ import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
 import { buildCrossEnvironmentResourceName } from "src/helpers/resource-name-builder";
 import { AwsResourceTypes } from "src/shared-types/aws-resource-types";
-import { awsResourceType } from "../resource-name-builder";
 
 export class MasterNameServerRecord extends pulumi.ComponentResource {
 	record: aws.route53.Record;
@@ -18,12 +17,7 @@ export class MasterNameServerRecord extends pulumi.ComponentResource {
 			type: AwsResourceTypes.dnsRecord,
 		});
 
-		super(
-			awsResourceType(AwsResourceTypes.dnsRecord),
-			recordName,
-			{},
-			opts.pulumiOpts,
-		);
+		super(AwsResourceTypes.dnsRecord, recordName, {}, opts.pulumiOpts);
 
 		const domainName = `${opts.subdomainEnvironment}.simonnorman.online`;
 

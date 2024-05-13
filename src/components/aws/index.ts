@@ -12,11 +12,13 @@ import { HttpsCertificate } from "./routing/https-certificate";
 import { MasterHostedZone } from "./routing/master-hosted-zone";
 import { MasterNameServerRecord } from "./routing/name-server-record";
 import { Vpc } from "./routing/vpc";
+import { Vpn } from "./routing/vpn";
 import { Ec2Cluster } from "./services/ecs-cluster";
 import { PublicFargateService } from "./services/public-fargate-service";
 
 export const aws = {
 	Vpc,
+	Vpn,
 	CrossAccountAccessRole,
 	LocalAdminUserGroup,
 	User,

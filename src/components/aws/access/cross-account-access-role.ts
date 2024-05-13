@@ -2,7 +2,6 @@ import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
 import { buildProjectWideResourceName } from "src/helpers/resource-name-builder";
 import { AwsResourceTypes } from "src/shared-types/aws-resource-types";
-import { awsResourceType } from "../resource-name-builder";
 
 export class CrossAccountAccessRole extends pulumi.ComponentResource {
 	role: aws.iam.Role;
@@ -13,12 +12,7 @@ export class CrossAccountAccessRole extends pulumi.ComponentResource {
 			type: AwsResourceTypes.role,
 			name: opts.name,
 		});
-		super(
-			awsResourceType(AwsResourceTypes.role),
-			roleName,
-			{},
-			opts.pulumiOpts,
-		);
+		super(AwsResourceTypes.role, roleName, {}, opts.pulumiOpts);
 
 		this.role = new aws.iam.Role(roleName, {
 			name: roleName,

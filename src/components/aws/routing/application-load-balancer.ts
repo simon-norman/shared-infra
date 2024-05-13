@@ -1,32 +1,22 @@
 import * as aws from "@pulumi/aws";
 import * as awsx from "@pulumi/awsx";
 import * as pulumi from "@pulumi/pulumi";
+import { buildComponentName } from "src/helpers";
 import { buildResourceName } from "src/helpers/resource-name-builder";
 import { AwsResourceTypes } from "src/shared-types/aws-resource-types";
-import { awsResourceType } from "../resource-name-builder";
+import { BaseComponentInput } from "src/shared-types/component-input";
 
 export class ApplicationLoadBalancer extends pulumi.ComponentResource {
 	loadBalancer: awsx.lb.ApplicationLoadBalancer;
 	listener: aws.lb.Listener;
 
 	constructor(opts: Options) {
-		const sharedNameOpts = {
-			name: opts.name,
-			environment: opts.environment,
-			region: opts.region,
-		};
-
-		const loadBalancerName = buildResourceName({
-			...sharedNameOpts,
-			type: AwsResourceTypes.loadBalancer,
+		const { name: loadBalancerName, sharedNameOpts } = buildComponentName({
+			...opts,
+			resourceType: AwsResourceTypes.loadBalancer,
 		});
 
-		super(
-			awsResourceType(AwsResourceTypes.loadBalancer),
-			loadBalancerName,
-			{},
-			opts.pulumiOpts,
-		);
+		super(AwsResourceTypes.loadBalancer, loadBalancerName, {}, opts.pulumiOpts);
 
 		this.loadBalancer = new awsx.lb.ApplicationLoadBalancer(
 			loadBalancerName,
@@ -68,12 +58,8 @@ export class ApplicationLoadBalancer extends pulumi.ComponentResource {
 	}
 }
 
-type Options = {
+type Options = BaseComponentInput & {
 	originalApplicationLoadBalancerOpts?: awsx.lb.ApplicationLoadBalancerArgs;
-	pulumiOpts?: pulumi.ComponentResourceOptions;
-	name: string;
-	environment: string;
-	region: string;
 	subnetIds: pulumi.Input<pulumi.Input<string>[]>;
 	securityGroup: pulumi.Input<string>;
 	isInternal: boolean;
