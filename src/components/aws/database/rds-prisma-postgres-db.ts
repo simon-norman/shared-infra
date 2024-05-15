@@ -14,7 +14,7 @@ export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 	rdsSubnetGroup: aws.rds.SubnetGroup;
 	roles: Array<{ originalName: string; role: postgresql.Role }> = [];
 
-	constructor(opts: Options) {
+	constructor(opts: RdsPrismaOptions) {
 		const { name: rdsName, sharedNameOpts } = buildComponentName({
 			...opts,
 			resourceType: AwsResourceTypes.databaseInstance,
@@ -61,7 +61,7 @@ export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 		this.registerOutputs();
 	}
 
-	private createSecurityGroup = (opts: Options) => {
+	private createSecurityGroup = (opts: RdsPrismaOptions) => {
 		const rdsSecurityGroupName = buildResourceName({
 			...opts,
 			name: `${opts.name}-rds`,
@@ -82,7 +82,7 @@ export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 		});
 	};
 
-	private createRdsInstance = (opts: Options, rdsName: string) => {
+	private createRdsInstance = (opts: RdsPrismaOptions, rdsName: string) => {
 		const subnetGroupName = buildResourceName({
 			...opts,
 			type: AwsResourceTypes.subnetGroup,
@@ -131,7 +131,7 @@ export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 	};
 
 	private runDbMigration = (
-		opts: Options,
+		opts: RdsPrismaOptions,
 		secretObject: pulumi.Output<{ username: string; password: string }>,
 		pgProvider: postgresql.Provider,
 		db: aws.rds.Instance,
@@ -249,7 +249,7 @@ type Role = {
 
 type ParsedSecret = pulumi.Output<{ username: string; password: string }>;
 
-type Options = BaseComponentInput & {
+export type RdsPrismaOptions = BaseComponentInput & {
 	originalRdsOpts?: aws.rds.InstanceArgs;
 	databaseName: pulumi.Input<string>;
 	availabilityZone: pulumi.Input<string>;
