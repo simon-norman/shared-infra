@@ -9,7 +9,7 @@ export class EnvironmentHostedZone extends pulumi.ComponentResource {
 	zone: aws.route53.Zone;
 
 	constructor(opts: Options) {
-		const resourceType = AwsResourceTypes.httpsCertificate;
+		const resourceType = AwsResourceTypes.route53Zone;
 		const { name: zoneName } = buildComponentName({
 			...opts,
 			resourceType,

@@ -68,7 +68,41 @@ export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 			type: AwsResourceTypes.securityGroup,
 		});
 
-		return new aws.ec2.SecurityGroup(rdsSecurityGroupName, {
+		if (opts.publiclyAccessible)
+			return this.securityGroupAllowingPublicTraffic(
+				rdsSecurityGroupName,
+				opts,
+			);
+
+		return this.securityGroupAllowingInternalTraffic(
+			rdsSecurityGroupName,
+			opts,
+		);
+	};
+
+	private securityGroupAllowingPublicTraffic = (
+		name: string,
+		opts: RdsPrismaOptions,
+	) => {
+		return new aws.ec2.SecurityGroup(name, {
+			vpcId: opts.vpcId,
+			description: "Allow traffic from the internet",
+			ingress: [
+				{
+					protocol: "tcp",
+					fromPort: 5432,
+					toPort: 5432,
+					cidrBlocks: ["0.0.0.0/0"],
+				},
+			],
+		});
+	};
+
+	private securityGroupAllowingInternalTraffic = (
+		name: string,
+		opts: RdsPrismaOptions,
+	) => {
+		return new aws.ec2.SecurityGroup(name, {
 			vpcId: opts.vpcId,
 			description: "Allow traffic from within subnet and Fargate",
 			ingress: [
@@ -106,8 +140,9 @@ export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 			instanceClass: aws.rds.InstanceType.T3_Micro,
 			availabilityZone: opts.availabilityZone,
 			manageMasterUserPassword: true,
+			publiclyAccessible: opts.publiclyAccessible,
 			iamDatabaseAuthenticationEnabled: true,
-			dbSubnetGroupName: this.rdsSubnetGroup.name,
+			dbSubnetGroupName: rdsSubnetGroup.name,
 			vpcSecurityGroupIds: [rdsSecurityGroup.id],
 		});
 
@@ -140,9 +175,9 @@ export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 			opts.migrationScriptPath || ""
 		} 'postgresql://${secretObject.apply(
 			(secret) => secret.username,
-		)}:${secretObject.apply((secret) => secret.password)}@${db.endpoint}/${
-			opts.databaseName
-		}'`;
+		)}:${secretObject.apply((secret) => encodeURIComponent(secret.password))}@${
+			db.endpoint
+		}/${opts.databaseName}'`;
 
 		return new local.Command(
 			"postgres-migration-command",
@@ -167,10 +202,9 @@ export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 			fullRoleName,
 			{
 				login: true,
-				name: fullRoleName,
+				name: baseRoleName,
 				// as using rds AWS IAM authentication, the password is irrelevant and postgres will not accept login with
 				// the password
-				password: "",
 			},
 			{
 				provider: roleParams.pgProvider,
@@ -185,16 +219,16 @@ export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 					{
 						...grant,
 						database: roleParams.db.dbName,
-						role: fullRoleName,
+						role: baseRoleName,
 					},
 					{
-						dependsOn: [roleParams.migrationCommand],
+						dependsOn: [roleParams.migrationCommand, newRole],
 						provider: roleParams.pgProvider,
 					},
 				),
 		);
 
-		this.addIamGrantToRole(roleParams, baseRoleName, fullRoleName);
+		this.addIamGrantToRole(roleParams, baseRoleName, newRole);
 
 		return {
 			role: newRole,
@@ -209,7 +243,7 @@ export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 	private addIamGrantToRole(
 		roleParams: RoleParams,
 		baseRoleName: string,
-		fullRoleName: string,
+		role: postgresql.Role,
 	) {
 		const roleGrantName = buildResourceName({
 			...roleParams.sharedNameOpts,
@@ -221,11 +255,11 @@ export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 			roleGrantName,
 			{
 				grantRole: "rds_iam",
-				role: fullRoleName,
+				role: baseRoleName,
 			},
 			{
 				provider: roleParams.pgProvider,
-				dependsOn: [roleParams.migrationCommand],
+				dependsOn: [roleParams.migrationCommand, role],
 			},
 		);
 	}
@@ -254,6 +288,7 @@ export type RdsPrismaOptions = BaseComponentInput & {
 	databaseName: pulumi.Input<string>;
 	availabilityZone: pulumi.Input<string>;
 	migrationScriptPath?: string;
+	publiclyAccessible?: boolean;
 	subnetIds: pulumi.Input<pulumi.Input<string>[]>;
 	vpcId: pulumi.Input<string>;
 	roles: Role[];

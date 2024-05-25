@@ -24,7 +24,12 @@ export class Vpc extends pulumi.ComponentResource {
 				...opts.originalVpcOpts,
 				subnetStrategy: "Auto",
 				cidrBlock: vpcCidrBlock,
+				enableDnsHostnames: opts.allowDnsResolution,
+				enableDnsSupport: opts.allowDnsResolution,
 				numberOfAvailabilityZones: 2,
+				natGateways: {
+					strategy: awsx.ec2.NatGatewayStrategy.None,
+				},
 				subnetSpecs: [
 					{ type: "Public", cidrMask: 20 },
 					// { type: "Private", cidrMask: 20 },
@@ -53,6 +58,7 @@ type Options = {
 	name: string;
 	environment: string;
 	region: string;
+	allowDnsResolution?: boolean;
 	vpn?: {
 		samlVpnEndpointServerCertificateArn: pulumi.Input<string>;
 		sslVpnEndpointServerCertificateArn: pulumi.Input<string>;

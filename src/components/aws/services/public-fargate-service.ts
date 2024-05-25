@@ -249,12 +249,13 @@ export class PublicFargateService extends pulumi.ComponentResource {
 						containerPort: opts.servicePort,
 					},
 				],
-				forceNewDeployment: true,
-				desiredCount: settings.desiredCount,
 				networkConfiguration: {
+					assignPublicIp: opts.assignPublicIp,
 					subnets: opts.subnets,
 					securityGroups: opts.securityGroups,
 				},
+				forceNewDeployment: true,
+				desiredCount: settings.desiredCount,
 				taskDefinitionArgs: {
 					cpu: settings.cpu,
 					memory: settings.memory,
@@ -268,6 +269,8 @@ export class PublicFargateService extends pulumi.ComponentResource {
 						[serviceContainerName]: {
 							name: serviceContainerName,
 							image: image.imageUri,
+							environment: opts.serviceEnvironmentVariables,
+							secrets: opts.serviceSecrets,
 							portMappings: [
 								{
 									containerPort: opts.servicePort,
@@ -327,6 +330,16 @@ const defaultNonProdSettings = () => {
 	};
 };
 
+export type EnvVariable = {
+	name: pulumi.Input<string>;
+	value: pulumi.Input<string>;
+};
+
+export type SecretInput = {
+	name: pulumi.Input<string>;
+	valueFrom: pulumi.Input<string>;
+};
+
 type Options = BaseComponentInput & {
 	originalFargateServiceOpts?: awsx.ecs.FargateServiceArgs;
 	clusterArn: pulumi.Input<string>;
@@ -336,15 +349,17 @@ type Options = BaseComponentInput & {
 	cpu?: string;
 	memory?: string;
 	servicePort: number;
-	httpsCertificateArn: pulumi.Input<string>;
+	subnets: pulumi.Input<pulumi.Input<string>[]>;
+	securityGroups: pulumi.Input<pulumi.Input<string>[]>;
+	assignPublicIp: boolean;
 	listenerArn: pulumi.Input<string>;
 	environmentHostedZoneId: pulumi.Input<string>;
 	loadBalancerDnsName: pulumi.Input<string>;
 	serviceDockerContext: string;
 	serviceDockerfilePath: string;
 	serviceDockerfileTarget: string;
-	subnets: pulumi.Input<pulumi.Input<string>[]>;
-	securityGroups: pulumi.Input<pulumi.Input<string>[]>;
+	serviceEnvironmentVariables?: pulumi.Input<pulumi.Input<EnvVariable>[]>;
+	serviceSecrets?: pulumi.Input<pulumi.Input<SecretInput>[]>;
 	db?: {
 		dbRoleName: pulumi.Input<string>;
 		awsDbInstanceId: pulumi.Input<string>;

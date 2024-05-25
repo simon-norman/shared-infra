@@ -113,6 +113,12 @@ export class LocalAdminUserGroup extends pulumi.ComponentResource {
 						Effect: "Allow",
 						Resource: "*",
 					},
+					{
+						Effect: "Allow",
+						Action: "rds-db:connect",
+						Resource:
+							"arn:aws:rds-db:eu-west-2:211125444328:dbuser:dev-1-eu-west-2-db-locations-db-instance/simon-norman",
+					},
 				],
 			},
 		});
