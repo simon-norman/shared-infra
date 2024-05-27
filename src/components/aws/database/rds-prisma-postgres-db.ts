@@ -203,8 +203,7 @@ export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 			{
 				login: true,
 				name: baseRoleName,
-				// as using rds AWS IAM authentication, the password is irrelevant and postgres will not accept login with
-				// the password
+				password: role.password.apply((password) => password),
 			},
 			{
 				provider: roleParams.pgProvider,
@@ -228,41 +227,11 @@ export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 				),
 		);
 
-		this.addIamGrantToRole(roleParams, baseRoleName, newRole);
-
 		return {
 			role: newRole,
 			originalName: baseRoleName,
 		};
 	};
-
-	/**
-	 * Adds the AWS RDS IAM role to this role, which enables it to access the database with iam auth rather than
-	 * username / password (more secure)
-	 */
-	private addIamGrantToRole(
-		roleParams: RoleParams,
-		baseRoleName: string,
-		role: postgresql.Role,
-	) {
-		const roleGrantName = buildResourceName({
-			...roleParams.sharedNameOpts,
-			name: `${baseRoleName}-aws-iam`,
-			type: PostgresqlResourceTypes.roleGrant,
-		});
-
-		new postgresql.GrantRole(
-			roleGrantName,
-			{
-				grantRole: "rds_iam",
-				role: baseRoleName,
-			},
-			{
-				provider: roleParams.pgProvider,
-				dependsOn: [roleParams.migrationCommand, role],
-			},
-		);
-	}
 }
 
 type RoleParams = {
@@ -279,6 +248,7 @@ type GrantArgs = Omit<postgresql.GrantArgs, "role"> & {
 type Role = {
 	name: string;
 	grants: GrantArgs[];
+	password: pulumi.Output<string>;
 };
 
 type ParsedSecret = pulumi.Output<{ username: string; password: string }>;
