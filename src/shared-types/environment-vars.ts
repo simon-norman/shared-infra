@@ -2,10 +2,10 @@ import * as pulumi from "@pulumi/pulumi";
 
 export type EnvVariable = {
 	name: string;
-	value: string;
+	value: pulumi.Input<string>;
 };
 
 export type SecretInput = {
-	name: string;
-	valueFrom: string;
+	name: pulumi.Input<string>;
+	valueFrom: pulumi.Input<string>;
 };

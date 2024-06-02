@@ -23,7 +23,7 @@ export enum AwsResourceTypes {
 	user = "user",
 	role = "role",
 	rolePolicy = "role-policy",
-	userLoginProfile = "login-profile",
+	userLoginProfile = "user-login-profile",
 	accessKey = "access-key",
 	userGroupMembership = "group-membership",
 	userGroup = "user-group",

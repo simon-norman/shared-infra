@@ -76,6 +76,47 @@ export class CiCdUserGroup extends pulumi.ComponentResource {
 			group: this.group.name,
 		});
 
+		const otherPermissionsPolicyName = `${groupName}-vpn-management-policy`;
+		const otherPermsPolicy = new aws.iam.Policy(otherPermissionsPolicyName, {
+			policy: {
+				Version: "2012-10-17",
+				Statement: [
+					{
+						Action: "ec2:*",
+						Effect: "Allow",
+						Resource: "*",
+					},
+					{
+						Effect: "Allow",
+						Action: [
+							"lambda:ListLayerVersions",
+							"lambda:ListLayers",
+							"lambda:CreateFunction",
+							"lambda:CreateEventSourceMapping",
+							"lambda:ListEventSourceMappings",
+							"lambda:DeleteEventSourceMapping",
+							"sqs:CreateQueue",
+							"sqs:DeleteQueue",
+							"sqs:ListQueues",
+							"sqs:GetQueueAttributes",
+							"sqs:SetQueueAttributes",
+							"sqs:SendMessage",
+							"sqs:ReceiveMessage",
+							"sqs:DeleteMessage",
+							"sqs:PurgeQueue",
+						],
+						Resource: "*",
+					},
+				],
+			},
+		});
+
+		const otherPermsPolicyAttachmentName = `${groupName}-vpn-mgmt-attach`;
+		new aws.iam.GroupPolicyAttachment(otherPermsPolicyAttachmentName, {
+			policyArn: otherPermsPolicy.arn,
+			group: this.group.name,
+		});
+
 		this.registerOutputs();
 	}
 }

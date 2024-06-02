@@ -34,7 +34,12 @@ export class LambdaFunction extends pulumi.ComponentResource {
 
 		const { lambdaRole } = this.createLambdaRole(opts);
 
-		const { lambda } = this.createLambda(opts, lambdaRole);
+		const { lambda } = this.createLambda(
+			opts,
+			lambdaRole,
+			this.image,
+			lambdaName,
+		);
 		this.lambda = lambda;
 
 		this.registerOutputs();
@@ -120,14 +125,23 @@ export class LambdaFunction extends pulumi.ComponentResource {
 		});
 	}
 
-	private createLambda(opts: Options, lambdaRole: aws.iam.Role) {
-		const secretsLambdaExtension = aws.lambda.getLayerVersion({
-			layerName: "AWS-Parameters-and-Secrets-Lambda-Extension",
-		});
+	private createLambda(
+		opts: Options,
+		lambdaRole: aws.iam.Role,
+		image: awsx.ecr.Image,
+		lambdaName: string,
+	) {
+		const current = aws.getCallerIdentity({});
+		const accountId = current.then((current) => current.accountId);
+		const secretsLambdaExtensionArn = pulumi.interpolate`arn:aws:lambda:${
+			aws.config.region
+		}:${accountId.then(
+			(id) => id,
+		)}:layer:AWS-Parameters-and-Secrets-Lambda-Extension:11`;
 
-		const lambda = new aws.lambda.Function("my-ecr-lambda", {
+		const lambda = new aws.lambda.Function(lambdaName, {
 			packageType: "Image",
-			imageUri: this.image.imageUri,
+			imageUri: image.imageUri,
 			role: lambdaRole.arn,
 			environment: {
 				variables:
@@ -143,7 +157,7 @@ export class LambdaFunction extends pulumi.ComponentResource {
 				subnetIds: opts.subnets,
 				securityGroupIds: opts.securityGroups,
 			},
-			layers: [secretsLambdaExtension.then((layer) => layer.arn)],
+			layers: [secretsLambdaExtensionArn],
 		});
 
 		return { lambda };
@@ -152,25 +166,10 @@ export class LambdaFunction extends pulumi.ComponentResource {
 
 export type Options = BaseComponentInput &
 	EcrRepoOptions & {
-		originalFargateServiceOpts?: awsx.ecs.FargateServiceArgs;
-		clusterArn: pulumi.Input<string>;
-		loadBalancerArn: pulumi.Input<string>;
-		vpcId: pulumi.Input<string>;
-		desiredCount?: number;
-		cpu?: string;
-		memory?: string;
-		servicePort: number;
 		subnets: pulumi.Input<pulumi.Input<string>[]>;
 		securityGroups: pulumi.Input<pulumi.Input<string>[]>;
-		listenerArn: pulumi.Input<string>;
-		environmentHostedZoneId: pulumi.Input<string>;
-		loadBalancerDnsName: pulumi.Input<string>;
 		serviceEnvironmentVariables?: EnvVariable[];
 		serviceSecrets?: SecretInput[];
-		db?: {
-			dbRoleName: pulumi.Input<string>;
-			awsDbInstanceId: pulumi.Input<string>;
-		};
 	};
 
-type EnvVariableAsObject = Record<string, string>;
+type EnvVariableAsObject = Record<string, pulumi.Input<string>>;

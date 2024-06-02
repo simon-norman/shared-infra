@@ -1,6 +1,7 @@
 import { CiCdUserGroup } from "./access/ci-cd-user-group";
 import { CrossAccountAccessRole } from "./access/cross-account-access-role";
 import { LocalAdminUserGroup } from "./access/local-admin-user-group";
+import { SecurityGroupInboundNoneOutboundAll } from "./access/security-group-inbound-none-outbound-all";
 import { SecurityGroupInboundPrivateOutboundAll } from "./access/security-group-inbound-private-outbound-all";
 import { SecurityGroupInboundPublicTlsOutboundAll } from "./access/security-group-inbound-public-outbound-all";
 import { ServiceUser } from "./access/service-user";
@@ -40,4 +41,5 @@ export const aws = {
 	EcrRepoImage,
 	LambdaFunction,
 	QueuedLambdaFunction,
+	SecurityGroupInboundNoneOutboundAll,
 };

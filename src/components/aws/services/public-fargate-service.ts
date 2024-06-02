@@ -2,7 +2,6 @@ import * as aws from "@pulumi/aws";
 import * as awsx from "@pulumi/awsx";
 import * as pulumi from "@pulumi/pulumi";
 import { buildComponentName } from "src/helpers";
-import { getAccountIdFromArn } from "src/helpers/get-account-id-arn";
 import {
 	buildHostName,
 	buildResourceName,
@@ -46,12 +45,7 @@ export class PublicFargateService extends pulumi.ComponentResource {
 		this.targetGroup = targetGroup;
 		this.listenerRule = listenerRule;
 
-		const awsAccountId = this.targetGroup.arn.apply(getAccountIdFromArn);
-
-		const { policyArn, secretAccessPolicy } = this.createServiceRole(
-			opts,
-			awsAccountId,
-		);
+		const { policyArn, secretAccessPolicy } = this.createServiceRole(opts);
 		this.secretAccessPolicy = secretAccessPolicy;
 
 		const { service } = this.buildService(
@@ -69,10 +63,7 @@ export class PublicFargateService extends pulumi.ComponentResource {
 		this.registerOutputs();
 	}
 
-	private createServiceRole = (
-		opts: Options,
-		awsAccountId: pulumi.Output<string>,
-	) => {
+	private createServiceRole = (opts: Options) => {
 		const serviceSecretArn = aws.secretsmanager
 			.getSecret({
 				name: `${opts.name}-${opts.environment}/doppler`,
@@ -95,14 +86,6 @@ export class PublicFargateService extends pulumi.ComponentResource {
 				Resource: serviceSecretArn,
 			},
 		];
-
-		if (opts.db) {
-			policyStatements.push({
-				Effect: "Allow",
-				Action: "rds-db:connect",
-				Resource: pulumi.interpolate`arn:aws:rds-db:${opts.region}:${awsAccountId}:dbuser:${opts.db.awsDbInstanceId}/${opts.db.dbRoleName}`,
-			});
-		}
 
 		const secretAccessPolicy = new aws.iam.Policy(secretAccessPolicyName, {
 			description:
@@ -310,8 +293,4 @@ type Options = BaseComponentInput & {
 	serviceDockerfileTarget: string;
 	serviceEnvironmentVariables?: EnvVariable[];
 	serviceSecrets?: SecretInput[];
-	db?: {
-		dbRoleName: pulumi.Input<string>;
-		awsDbInstanceId: pulumi.Input<string>;
-	};
 };
