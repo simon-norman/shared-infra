@@ -22,6 +22,7 @@ export enum AwsResourceTypes {
 	serviceContainer = "service-container",
 	user = "user",
 	role = "role",
+	rolePolicy = "role-policy",
 	userLoginProfile = "login-profile",
 	accessKey = "access-key",
 	userGroupMembership = "group-membership",
@@ -30,4 +31,5 @@ export enum AwsResourceTypes {
 	permissionsPolicy = "permissions-policy",
 	imageRepository = "image-repository",
 	image = "image",
+	lambda = "lambda",
 }

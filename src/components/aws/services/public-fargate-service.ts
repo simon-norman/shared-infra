@@ -11,6 +11,8 @@ import { elbHostedZones } from "src/shared-types/aws-elb-hosted-zone";
 import { AwsRegion } from "src/shared-types/aws-regions";
 import { AwsResourceTypes } from "src/shared-types/aws-resource-types";
 import { BaseComponentInput } from "src/shared-types/component-input";
+import { EnvVariable, SecretInput } from "src/shared-types/environment-vars";
+import { EcrRepoImage } from "./ecr-repo-image";
 
 export class PublicFargateService extends pulumi.ComponentResource {
 	service: awsx.ecs.FargateService;
@@ -24,7 +26,7 @@ export class PublicFargateService extends pulumi.ComponentResource {
 	constructor(opts: Options) {
 		const { name: fargateServiceName } = buildComponentName({
 			...opts,
-			resourceType: AwsResourceTypes.cluster,
+			resourceType: AwsResourceTypes.fargateService,
 		});
 
 		super(
@@ -34,9 +36,9 @@ export class PublicFargateService extends pulumi.ComponentResource {
 			opts.pulumiOpts,
 		);
 
-		const { image, ecrRepo } = this.uploadDockerImage(opts);
-		this.image = image;
-		this.ecrRepo = ecrRepo;
+		const imageRepo = new EcrRepoImage(opts);
+		this.image = imageRepo.image;
+		this.ecrRepo = imageRepo.ecrRepo;
 
 		const { targetGroup, listenerRule, hostname } =
 			this.configureLoadBalancer(opts);
@@ -57,7 +59,7 @@ export class PublicFargateService extends pulumi.ComponentResource {
 			fargateServiceName,
 			targetGroup,
 			policyArn,
-			image,
+			this.image,
 		);
 		this.service = service;
 
@@ -66,48 +68,6 @@ export class PublicFargateService extends pulumi.ComponentResource {
 
 		this.registerOutputs();
 	}
-
-	private uploadDockerImage = (opts: Options) => {
-		const ecrRepoName = buildResourceName({
-			...opts,
-			type: AwsResourceTypes.imageRepository,
-		});
-
-		const imageAgeLimitInDays = 3;
-		const ecrRepo = new awsx.ecr.Repository(ecrRepoName, {
-			name: ecrRepoName,
-			forceDelete: true,
-			lifecyclePolicy: {
-				rules: [
-					{
-						description: `Remove untagged images after ${imageAgeLimitInDays}`,
-						tagStatus: "untagged",
-						maximumAgeLimit: imageAgeLimitInDays,
-					},
-				],
-			},
-		});
-
-		const imageName = buildResourceName({
-			...opts,
-			type: AwsResourceTypes.image,
-		});
-
-		const image = new awsx.ecr.Image(imageName, {
-			repositoryUrl: ecrRepo.url,
-			context: opts.serviceDockerContext,
-			dockerfile: opts.serviceDockerfilePath,
-			target: opts.serviceDockerfileTarget,
-			// @ts-expect-error - parameter is in pulumi docs but missing in types - https://www.pulumi.com/registry/packages/awsx/api-docs/ecr/image/#imagetag_nodejs
-			imageTag: `${opts.name}:latest`,
-			platform: "linux/amd64",
-			args: {
-				ENV: opts.environment,
-			},
-		});
-
-		return { image, ecrRepo };
-	};
 
 	private createServiceRole = (
 		opts: Options,
@@ -330,16 +290,6 @@ const defaultNonProdSettings = () => {
 	};
 };
 
-export type EnvVariable = {
-	name: pulumi.Input<string>;
-	value: pulumi.Input<string>;
-};
-
-export type SecretInput = {
-	name: pulumi.Input<string>;
-	valueFrom: pulumi.Input<string>;
-};
-
 type Options = BaseComponentInput & {
 	originalFargateServiceOpts?: awsx.ecs.FargateServiceArgs;
 	clusterArn: pulumi.Input<string>;
@@ -358,8 +308,8 @@ type Options = BaseComponentInput & {
 	serviceDockerContext: string;
 	serviceDockerfilePath: string;
 	serviceDockerfileTarget: string;
-	serviceEnvironmentVariables?: pulumi.Input<pulumi.Input<EnvVariable>[]>;
-	serviceSecrets?: pulumi.Input<pulumi.Input<SecretInput>[]>;
+	serviceEnvironmentVariables?: EnvVariable[];
+	serviceSecrets?: SecretInput[];
 	db?: {
 		dbRoleName: pulumi.Input<string>;
 		awsDbInstanceId: pulumi.Input<string>;
