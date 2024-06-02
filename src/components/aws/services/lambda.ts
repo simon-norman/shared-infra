@@ -150,7 +150,7 @@ export class LambdaFunction extends pulumi.ComponentResource {
 	}
 }
 
-type Options = BaseComponentInput &
+export type Options = BaseComponentInput &
 	EcrRepoOptions & {
 		originalFargateServiceOpts?: awsx.ecs.FargateServiceArgs;
 		clusterArn: pulumi.Input<string>;
@@ -174,6 +174,3 @@ type Options = BaseComponentInput &
 	};
 
 type EnvVariableAsObject = Record<string, string>;
-// secrets
-// code - docker image
-//

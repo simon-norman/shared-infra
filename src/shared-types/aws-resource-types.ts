@@ -32,4 +32,7 @@ export enum AwsResourceTypes {
 	imageRepository = "image-repository",
 	image = "image",
 	lambda = "lambda",
+	queuedLambda = "queued-lambda",
+	sqs = "sqs",
+	eventSourceMapping = "event-source-mapping",
 }

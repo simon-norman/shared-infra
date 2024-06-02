@@ -13,8 +13,11 @@ import { MasterHostedZone } from "./routing/master-hosted-zone";
 import { MasterNameServerRecord } from "./routing/name-server-record";
 import { Vpc } from "./routing/vpc";
 import { Vpn } from "./routing/vpn";
+import { EcrRepoImage } from "./services/ecr-repo-image";
 import { Ec2Cluster } from "./services/ecs-cluster";
+import { LambdaFunction } from "./services/lambda";
 import { PublicFargateService } from "./services/public-fargate-service";
+import { QueuedLambdaFunction } from "./services/queued-lambda";
 
 export const aws = {
 	Vpc,
@@ -34,4 +37,7 @@ export const aws = {
 	ServiceUser,
 	EnvironmentHostedZone,
 	RdsPrismaPostgresDb,
+	EcrRepoImage,
+	LambdaFunction,
+	QueuedLambdaFunction,
 };
