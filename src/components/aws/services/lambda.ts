@@ -2,7 +2,7 @@ import * as aws from "@pulumi/aws";
 import * as awsx from "@pulumi/awsx";
 import * as pulumi from "@pulumi/pulumi";
 import { buildComponentName } from "src/helpers";
-import { AwsResourceTypes } from "src/shared-types";
+import { AwsRegion, AwsResourceTypes } from "src/shared-types";
 import { BaseComponentInput } from "src/shared-types/component-input";
 import { EnvVariable, SecretInput } from "src/shared-types/environment-vars";
 import { EcrRepoImage, Options as EcrRepoOptions } from "./ecr-repo-image";
@@ -131,13 +131,11 @@ export class LambdaFunction extends pulumi.ComponentResource {
 		image: awsx.ecr.Image,
 		lambdaName: string,
 	) {
-		const current = aws.getCallerIdentity({});
-		const accountId = current.then((current) => current.accountId);
 		const secretsLambdaExtensionArn = pulumi.interpolate`arn:aws:lambda:${
 			aws.config.region
-		}:${accountId.then(
-			(id) => id,
-		)}:layer:AWS-Parameters-and-Secrets-Lambda-Extension:11`;
+		}:${
+			lambdaRegionLayerAccountIds[aws.config.region as AwsRegion]
+		}:layer:AWS-Parameters-and-Secrets-Lambda-Extension:11`;
 
 		const lambda = new aws.lambda.Function(lambdaName, {
 			packageType: "Image",
@@ -163,6 +161,10 @@ export class LambdaFunction extends pulumi.ComponentResource {
 		return { lambda };
 	}
 }
+
+export const lambdaRegionLayerAccountIds = {
+	[AwsRegion.euWest2]: "133256977650",
+};
 
 export type Options = BaseComponentInput &
 	EcrRepoOptions & {
