@@ -55,7 +55,6 @@ export class EcrRepoImage extends pulumi.ComponentResource {
 			context: opts.serviceDockerContext,
 			dockerfile: opts.serviceDockerfilePath,
 			target: opts.serviceDockerfileTarget,
-			// @ts-expect-error - parameter is in pulumi docs but missing in types - https://www.pulumi.com/registry/packages/awsx/api-docs/ecr/image/#imagetag_nodejs
 			imageTag: `${opts.name}:latest`,
 			platform: "linux/amd64",
 			args: {

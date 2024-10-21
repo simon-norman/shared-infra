@@ -122,6 +122,7 @@ export class LocalAdminUserGroup extends pulumi.ComponentResource {
 							"lambda:CreateEventSourceMapping",
 							"lambda:ListEventSourceMappings",
 							"lambda:DeleteEventSourceMapping",
+							"lambda:GetFunction",
 							"sqs:CreateQueue",
 							"sqs:DeleteQueue",
 							"sqs:ListQueues",

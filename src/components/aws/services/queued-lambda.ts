@@ -15,6 +15,7 @@ export interface LambdaFunctionArgs {
 export class QueuedLambdaFunction extends pulumi.ComponentResource {
 	public readonly lambda: LambdaFunction;
 	public readonly eventSourceMapping: aws.lambda.EventSourceMapping;
+	public readonly queue: aws.sqs.Queue;
 
 	constructor(opts: Options) {
 		const { name: lambdaName } = buildComponentName({
@@ -30,8 +31,34 @@ export class QueuedLambdaFunction extends pulumi.ComponentResource {
 			...opts,
 			resourceType: AwsResourceTypes.sqs,
 		});
-		const queue = new aws.sqs.Queue(queueName, {
+		this.queue = new aws.sqs.Queue(queueName, {
 			visibilityTimeoutSeconds: 300,
+		});
+
+		const { name: lambdaPermissionsForQueue } = buildComponentName({
+			...opts,
+			name: `${opts.name}-queue-policy`,
+			resourceType: AwsResourceTypes.rolePolicy,
+		});
+
+		new aws.iam.RolePolicy(lambdaPermissionsForQueue, {
+			role: this.lambda.role.id,
+			policy: this.queue.arn.apply((queueArn) =>
+				JSON.stringify({
+					Version: "2012-10-17",
+					Statement: [
+						{
+							Effect: "Allow",
+							Action: [
+								"sqs:ReceiveMessage",
+								"sqs:DeleteMessage",
+								"sqs:GetQueueAttributes",
+							],
+							Resource: queueArn,
+						},
+					],
+				}),
+			),
 		});
 
 		const { name: sourceMapping } = buildComponentName({
@@ -40,7 +67,7 @@ export class QueuedLambdaFunction extends pulumi.ComponentResource {
 		});
 
 		this.eventSourceMapping = new aws.lambda.EventSourceMapping(sourceMapping, {
-			eventSourceArn: queue.arn,
+			eventSourceArn: this.queue.arn,
 			functionName: this.lambda.lambda.name,
 			batchSize: 10,
 			enabled: true,

@@ -22,18 +22,50 @@ export class Vpc extends pulumi.ComponentResource {
 			name,
 			{
 				...opts.originalVpcOpts,
-				subnetStrategy: "Auto",
+				subnetStrategy: "Exact",
 				cidrBlock: vpcCidrBlock,
+				numberOfAvailabilityZones: 2,
 				enableDnsHostnames: opts.allowDnsResolution,
 				enableDnsSupport: opts.allowDnsResolution,
-				numberOfAvailabilityZones: 2,
 				natGateways: {
-					strategy: awsx.ec2.NatGatewayStrategy.None,
+					strategy: awsx.ec2.NatGatewayStrategy.OnePerAz,
 				},
 				subnetSpecs: [
-					{ type: "Public", cidrMask: 20 },
-					// { type: "Private", cidrMask: 20 },
-					{ type: "Isolated", cidrMask: 20 },
+					{
+						type: "Public",
+						cidrBlocks: ["10.0.0.0/20", "10.0.128.0/20"],
+						name: "public-A",
+					},
+					{
+						type: "Private",
+						cidrBlocks: ["10.0.16.0/20", "10.0.144.0/20"],
+						name: "private-A",
+					},
+					{
+						type: "Isolated",
+						cidrBlocks: ["10.0.32.0/20", "10.0.160.0/20"],
+						name: "isolated-A",
+					},
+					{
+						type: "Unused",
+						cidrBlocks: ["10.0.48.0/20", "10.0.176.0/20"],
+					},
+					{
+						type: "Unused",
+						cidrBlocks: ["10.0.64.0/20", "10.0.192.0/20"],
+					},
+					{
+						type: "Unused",
+						cidrBlocks: ["10.0.80.0/20", "10.0.208.0/20"],
+					},
+					{
+						type: "Unused",
+						cidrBlocks: ["10.0.96.0/20", "10.0.224.0/20"],
+					},
+					{
+						type: "Unused",
+						cidrBlocks: ["10.0.112.0/20", "10.0.240.0/20"],
+					},
 				],
 			},
 			{ parent: this },

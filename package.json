@@ -1,27 +1,27 @@
 {
-  "name": "@breeze32/shared-infra",
-  "author": "Simon Norman",
-  "version": "1.0.7",
-  "license": "MIT",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "scripts": {
-    "prepublish": "tsup",
-    "build": "tsup",
-    "bump-patch": "pnpm version patch",
-    "publish-patch": "pnpm bump-patch && pnpm publish"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "^1.5.3",
-    "ts-node": "^10.9.2",
-    "tsup": "^8.0.1",
-    "typescript": "^5.3.3"
-  },
-  "dependencies": {
-    "@pulumi/awsx": "2.5.0",
-    "@pulumi/command": "^0.10.0",
-    "@pulumi/digitalocean": "4.25.1",
-    "@pulumi/postgresql": "^3.11.0",
-    "@pulumi/pulumi": "3.104.2"
-  }
+	"name": "@breeze32/shared-infra",
+	"author": "Simon Norman",
+	"version": "1.0.7",
+	"license": "MIT",
+	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"scripts": {
+		"prepublish": "tsup",
+		"build": "tsup",
+		"bump-patch": "pnpm version patch",
+		"publish-patch": "pnpm bump-patch && pnpm publish"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^1.5.3",
+		"ts-node": "^10.9.2",
+		"tsup": "^8.0.1",
+		"typescript": "^5.3.3"
+	},
+	"dependencies": {
+		"@pulumi/awsx": "2.16.1",
+		"@pulumi/command": "^0.10.0",
+		"@pulumi/digitalocean": "4.25.1",
+		"@pulumi/postgresql": "^3.11.0",
+		"@pulumi/pulumi": "3.104.2"
+	}
 }

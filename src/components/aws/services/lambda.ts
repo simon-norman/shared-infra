@@ -1,11 +1,10 @@
 import * as aws from "@pulumi/aws";
-import * as awsx from "@pulumi/awsx";
 import * as pulumi from "@pulumi/pulumi";
 import { buildComponentName } from "src/helpers";
 import { AwsRegion, AwsResourceTypes } from "src/shared-types";
 import { BaseComponentInput } from "src/shared-types/component-input";
 import { EnvVariable, SecretInput } from "src/shared-types/environment-vars";
-import { EcrRepoImage, Options as EcrRepoOptions } from "./ecr-repo-image";
+import { Options as EcrRepoOptions } from "./ecr-repo-image";
 
 export interface LambdaFunctionArgs {
 	name: string;
@@ -17,8 +16,7 @@ export interface LambdaFunctionArgs {
 
 export class LambdaFunction extends pulumi.ComponentResource {
 	public readonly lambda: aws.lambda.Function;
-	public readonly image: awsx.ecr.Image;
-	public readonly ecrRepo: awsx.ecr.Repository;
+	public readonly role: aws.iam.Role;
 
 	constructor(opts: Options) {
 		const { name: lambdaName } = buildComponentName({
@@ -28,18 +26,10 @@ export class LambdaFunction extends pulumi.ComponentResource {
 
 		super(AwsResourceTypes.lambda, lambdaName, {}, opts.pulumiOpts);
 
-		const imageRepo = new EcrRepoImage(opts);
-		this.image = imageRepo.image;
-		this.ecrRepo = imageRepo.ecrRepo;
-
 		const { lambdaRole } = this.createLambdaRole(opts);
+		this.role = lambdaRole;
 
-		const { lambda } = this.createLambda(
-			opts,
-			lambdaRole,
-			this.image,
-			lambdaName,
-		);
+		const { lambda } = this.createLambda(opts, lambdaRole, lambdaName);
 		this.lambda = lambda;
 
 		this.registerOutputs();
@@ -73,6 +63,16 @@ export class LambdaFunction extends pulumi.ComponentResource {
 		new aws.iam.RolePolicyAttachment(executionPolicyName, {
 			role: lambdaRole.name,
 			policyArn: aws.iam.ManagedPolicies.AWSLambdaBasicExecutionRole,
+		});
+
+		const { name: vpcAccessPolicyName } = buildComponentName({
+			...opts,
+			name: `${opts.name}-vpc-access`,
+			resourceType: AwsResourceTypes.policyAttachment,
+		});
+		new aws.iam.RolePolicyAttachment(vpcAccessPolicyName, {
+			role: lambdaRole.name,
+			policyArn: aws.iam.ManagedPolicies.AWSLambdaVPCAccessExecutionRole,
 		});
 
 		this.addSecretsAccessPermissions(opts, lambdaRole);
@@ -128,7 +128,6 @@ export class LambdaFunction extends pulumi.ComponentResource {
 	private createLambda(
 		opts: Options,
 		lambdaRole: aws.iam.Role,
-		image: awsx.ecr.Image,
 		lambdaName: string,
 	) {
 		const secretsLambdaExtensionArn = pulumi.interpolate`arn:aws:lambda:${
@@ -138,9 +137,11 @@ export class LambdaFunction extends pulumi.ComponentResource {
 		}:layer:AWS-Parameters-and-Secrets-Lambda-Extension:11`;
 
 		const lambda = new aws.lambda.Function(lambdaName, {
-			packageType: "Image",
-			imageUri: image.imageUri,
+			code: new pulumi.asset.FileArchive(opts.zipFilePath),
 			role: lambdaRole.arn,
+			timeout: 10,
+			handler: opts.handler,
+			runtime: aws.lambda.Runtime.NodeJS20dX,
 			environment: {
 				variables:
 					opts.serviceEnvironmentVariables?.reduce<EnvVariableAsObject>(
@@ -148,7 +149,7 @@ export class LambdaFunction extends pulumi.ComponentResource {
 							acc[envVar.name] = envVar.value;
 							return acc;
 						},
-						{},
+						{ NODE_ENV: opts.environment },
 					),
 			},
 			vpcConfig: {
@@ -172,6 +173,8 @@ export type Options = BaseComponentInput &
 		securityGroups: pulumi.Input<pulumi.Input<string>[]>;
 		serviceEnvironmentVariables?: EnvVariable[];
 		serviceSecrets?: SecretInput[];
+		handler?: string;
+		zipFilePath: string;
 	};
 
 type EnvVariableAsObject = Record<string, pulumi.Input<string>>;

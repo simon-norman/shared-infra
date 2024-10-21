@@ -34,7 +34,9 @@ export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 				host: this.db.address,
 				port: 5432,
 				username: secretObject.apply((secret) => secret.username),
-				password: secretObject.apply((secret) => secret.password),
+				password: secretObject.apply((secret) => {
+					return secret.password;
+				}),
 				database: opts.databaseName,
 				sslmode: "require",
 				superuser: false,
@@ -136,14 +138,16 @@ export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 			identifier: rdsName,
 			engine: "postgres",
 			username: "postgres",
-			engineVersion: "16.1",
+			engineVersion: "16.3",
 			instanceClass: aws.rds.InstanceType.T3_Micro,
 			availabilityZone: opts.availabilityZone,
 			manageMasterUserPassword: true,
 			publiclyAccessible: opts.publiclyAccessible,
 			iamDatabaseAuthenticationEnabled: true,
 			dbSubnetGroupName: rdsSubnetGroup.name,
+			skipFinalSnapshot: false,
 			vpcSecurityGroupIds: [rdsSecurityGroup.id],
+			finalSnapshotIdentifier: `${rdsName}-final-snapshot`,
 		});
 
 		return { rds, rdsSubnetGroup };
