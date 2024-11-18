@@ -1,8 +1,10 @@
 import * as aws from "@pulumi/aws";
+import { local } from "@pulumi/command";
 import * as pulumi from "@pulumi/pulumi";
-import { buildComponentName } from "src/helpers";
+import { buildComponentName, buildResourceName } from "src/helpers";
 import { AwsRegion, AwsResourceTypes } from "src/shared-types";
 import { BaseComponentInput } from "src/shared-types/component-input";
+import { CustomResourceTypes } from "src/shared-types/custom-resource-types";
 import { EnvVariable, SecretInput } from "src/shared-types/environment-vars";
 import { Options as EcrRepoOptions } from "./ecr-repo-image";
 
@@ -26,11 +28,15 @@ export class LambdaFunction extends pulumi.ComponentResource {
 
 		super(AwsResourceTypes.lambda, lambdaName, {}, opts.pulumiOpts);
 
-		const { lambdaRole } = this.createLambdaRole(opts);
+		const { lambdaRole, serviceSecretArn } = this.createLambdaRole(opts);
 		this.role = lambdaRole;
 
 		const { lambda } = this.createLambda(opts, lambdaRole, lambdaName);
 		this.lambda = lambda;
+
+		if (opts.includeDatadog) {
+			this.addDatadog(opts, lambdaName, serviceSecretArn);
+		}
 
 		this.registerOutputs();
 	}
@@ -75,9 +81,12 @@ export class LambdaFunction extends pulumi.ComponentResource {
 			policyArn: aws.iam.ManagedPolicies.AWSLambdaVPCAccessExecutionRole,
 		});
 
-		this.addSecretsAccessPermissions(opts, lambdaRole);
+		const { serviceSecretArn } = this.addSecretsAccessPermissions(
+			opts,
+			lambdaRole,
+		);
 
-		return { lambdaRole };
+		return { lambdaRole, serviceSecretArn };
 	}
 
 	private addSecretsAccessPermissions(opts: Options, lambdaRole: aws.iam.Role) {
@@ -123,6 +132,8 @@ export class LambdaFunction extends pulumi.ComponentResource {
 			role: lambdaRole.name,
 			policyArn: readSecretsPolicy.arn,
 		});
+
+		return { serviceSecretArn };
 	}
 
 	private createLambda(
@@ -161,6 +172,26 @@ export class LambdaFunction extends pulumi.ComponentResource {
 
 		return { lambda };
 	}
+
+	private addDatadog(
+		opts: Options,
+		lambdaName: string,
+		serviceSecretArn: Promise<string>,
+	) {
+		const migrationScriptCommand = pulumi.interpolate`bash ./lambda-datadog-up ${lambdaName} ${opts.region} ${serviceSecretArn}`;
+		const commandName = buildResourceName({
+			...opts,
+			type: CustomResourceTypes.datadogLambda,
+		});
+
+		return new local.Command(
+			commandName,
+			{
+				create: migrationScriptCommand,
+			},
+			{ dependsOn: this.lambda },
+		);
+	}
 }
 
 export const lambdaRegionLayerAccountIds = {
@@ -175,6 +206,7 @@ export type Options = BaseComponentInput &
 		serviceSecrets?: SecretInput[];
 		handler?: string;
 		zipFilePath: string;
+		includeDatadog?: boolean;
 	};
 
 type EnvVariableAsObject = Record<string, pulumi.Input<string>>;

@@ -1,12 +1,14 @@
 import { Input } from "@pulumi/pulumi";
 import { AwsResourceTypes } from "src/shared-types/aws-resource-types";
+import { CustomResourceTypes } from "src/shared-types/custom-resource-types";
 import { DigitalOceanResourceTypes } from "src/shared-types/digital-ocean-resource-types";
 import { PostgresqlResourceTypes } from "src/shared-types/postgresql-resource-types";
 
 export type ResourceType =
 	| AwsResourceTypes
 	| DigitalOceanResourceTypes
-	| PostgresqlResourceTypes;
+	| PostgresqlResourceTypes
+	| CustomResourceTypes;
 
 type ResourceNameOpts = {
 	region: Input<string>;
