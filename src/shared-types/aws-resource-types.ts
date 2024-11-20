@@ -35,4 +35,6 @@ export enum AwsResourceTypes {
 	queuedLambda = "queued-lambda",
 	sqs = "sqs",
 	eventSourceMapping = "event-source-mapping",
+	secret = "secret",
+	rdsParamGroup = "rds-param-group",
 }

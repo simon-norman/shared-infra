@@ -18,11 +18,11 @@
 		"typescript": "^5.3.3"
 	},
 	"dependencies": {
-		"@datadog/datadog-ci": "^2.45.0",
 		"@pulumi/awsx": "2.16.1",
 		"@pulumi/command": "^0.10.0",
 		"@pulumi/digitalocean": "4.25.1",
 		"@pulumi/postgresql": "^3.11.0",
-		"@pulumi/pulumi": "3.104.2"
+		"@pulumi/pulumi": "3.104.2",
+		"dedent": "^1.5.3"
 	}
 }

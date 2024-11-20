@@ -8,11 +8,19 @@ import { buildResourceName } from "src/helpers/resource-name-builder";
 import { AwsResourceTypes } from "src/shared-types/aws-resource-types";
 import { BaseComponentInput } from "src/shared-types/component-input";
 import { PostgresqlResourceTypes } from "src/shared-types/postgresql-resource-types";
+import { getRdsPostgresDatadogInitScript } from "./rds-postgres-datadog-script";
+
+const engineVersion = "16.3";
+const family = `postgres${engineVersion.split(".")[0]}`;
+
+export const datadogSchemaAndRoleName = "datadog";
+export const datadogDbPasswordSecretNamePrefix = "datadog-rds-secret-";
 
 export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 	db: aws.rds.Instance;
 	rdsSubnetGroup: aws.rds.SubnetGroup;
 	roles: Array<{ originalName: string; role: postgresql.Role }> = [];
+	paramGroup: aws.rds.ParameterGroup;
 
 	constructor(opts: RdsPrismaOptions) {
 		const { name: rdsName, sharedNameOpts } = buildComponentName({
@@ -22,7 +30,14 @@ export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 
 		super(AwsResourceTypes.databaseInstance, rdsName, {}, opts.pulumiOpts);
 
-		const { rds, rdsSubnetGroup } = this.createRdsInstance(opts, rdsName);
+		const paramGroup = this.createParameterGroup(opts);
+		this.paramGroup = paramGroup;
+
+		const { rds, rdsSubnetGroup } = this.createRdsInstance(
+			opts,
+			rdsName,
+			this.paramGroup,
+		);
 		this.db = rds;
 		this.rdsSubnetGroup = rdsSubnetGroup;
 
@@ -59,6 +74,16 @@ export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 				db: this.db,
 			}),
 		);
+
+		if (opts.datadog) {
+			this.setupToEnableDatadog(
+				opts,
+				this.db,
+				pgProvider,
+				migrationCommand,
+				secretObject,
+			);
+		}
 
 		this.registerOutputs();
 	}
@@ -118,7 +143,41 @@ export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 		});
 	};
 
-	private createRdsInstance = (opts: RdsPrismaOptions, rdsName: string) => {
+	private createParameterGroup = (opts: RdsPrismaOptions) => {
+		const paramGroupName = buildResourceName({
+			...opts,
+			type: AwsResourceTypes.rdsParamGroup,
+		});
+
+		const datadogParamGroupSettings = {
+			shared_preload_libraries: "pg_stat_statements",
+			track_activity_query_size: "4096",
+			"pg_stat_statements.track": "ALL",
+			"pg_stat_statements.max": "10000",
+			"pg_stat_statements.track_utility": "off",
+			track_io_timing: "on",
+		};
+
+		const paramGroup = new aws.rds.ParameterGroup(paramGroupName, {
+			name: paramGroupName,
+			family: family,
+			parameters: Object.entries(datadogParamGroupSettings).map(
+				([name, value]) => ({
+					name: name,
+					value: value,
+					applyMethod: "pending-reboot", // Most of these parameters require a reboot
+				}),
+			),
+		});
+
+		return paramGroup;
+	};
+
+	private createRdsInstance = (
+		opts: RdsPrismaOptions,
+		rdsName: string,
+		paramGroup: aws.rds.ParameterGroup,
+	) => {
 		const subnetGroupName = buildResourceName({
 			...opts,
 			type: AwsResourceTypes.subnetGroup,
@@ -148,6 +207,7 @@ export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 			skipFinalSnapshot: false,
 			vpcSecurityGroupIds: [rdsSecurityGroup.id],
 			finalSnapshotIdentifier: `${rdsName}-final-snapshot`,
+			parameterGroupName: paramGroup.name,
 		});
 
 		return { rds, rdsSubnetGroup };
@@ -169,6 +229,21 @@ export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 		return secretObject;
 	};
 
+	private getDatadogRdsPassword = (opts: RdsPrismaOptions) => {
+		const datadogSecret = aws.secretsmanager.getSecretVersion({
+			secretId: `${datadogDbPasswordSecretNamePrefix}${opts.name}`,
+		});
+
+		const datadogSecretString = datadogSecret.then(
+			(secret) => secret.secretString,
+		);
+		const secretObject: ParsedSecret = pulumi.jsonParse(
+			datadogSecretString,
+		) as ParsedSecret;
+
+		return secretObject;
+	};
+
 	private runDbMigration = (
 		opts: RdsPrismaOptions,
 		secretObject: pulumi.Output<{ username: string; password: string }>,
@@ -177,11 +252,7 @@ export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 	) => {
 		const migrationScriptCommand = pulumi.interpolate`bash ${
 			opts.migrationScriptPath || ""
-		} 'postgresql://${secretObject.apply(
-			(secret) => secret.username,
-		)}:${secretObject.apply((secret) => encodeURIComponent(secret.password))}@${
-			db.endpoint
-		}/${opts.databaseName}'`;
+		} ${this.getDatabaseConnectionString(opts, secretObject, db)}`;
 
 		return new local.Command(
 			"postgres-migration-command",
@@ -191,6 +262,18 @@ export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 			},
 			{ dependsOn: pgProvider },
 		);
+	};
+
+	private getDatabaseConnectionString = (
+		opts: RdsPrismaOptions,
+		secretObject: pulumi.Output<{ username: string; password: string }>,
+		db: aws.rds.Instance,
+	) => {
+		return pulumi.interpolate`postgresql://${secretObject.apply(
+			(secret) => secret.username,
+		)}:${secretObject.apply((secret) => encodeURIComponent(secret.password))}@${
+			db.endpoint
+		}/${opts.databaseName}`;
 	};
 
 	private addRoleToDatabase = (role: Role, roleParams: RoleParams) => {
@@ -236,6 +319,61 @@ export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 			originalName: baseRoleName,
 		};
 	};
+
+	private setupToEnableDatadog = (
+		opts: RdsPrismaOptions,
+		db: aws.rds.Instance,
+		pgProvider: postgresql.Provider,
+		migrationCommand: local.Command,
+		secretObject: pulumi.Output<{ username: string; password: string }>,
+	) => {
+		const baseRoleName = `datadog-${opts.name}`;
+		const fullRoleName = buildResourceName({
+			...opts,
+			name: baseRoleName,
+			type: PostgresqlResourceTypes.role,
+		});
+
+		const password = this.getDatadogRdsPassword(opts);
+
+		const newRole = new postgresql.Role(
+			fullRoleName,
+			{
+				login: true,
+				name: baseRoleName,
+				password: password.password,
+			},
+			{
+				provider: pgProvider,
+				// ensure that only created once db fully set up and migrated
+				dependsOn: [migrationCommand],
+			},
+		);
+
+		const dbConnectionString = this.getDatabaseConnectionString(
+			opts,
+			secretObject,
+			db,
+		);
+
+		const datadogInitCommand = getRdsPostgresDatadogInitScript({
+			dbConnectionString,
+		});
+
+		new local.Command(
+			"postgres-datadog-init-command",
+			{
+				create: datadogInitCommand,
+				triggers: [randomUUID()],
+			},
+			{ dependsOn: pgProvider },
+		);
+
+		return {
+			role: newRole,
+			originalName: baseRoleName,
+		};
+	};
 }
 
 type RoleParams = {
@@ -267,4 +405,5 @@ export type RdsPrismaOptions = BaseComponentInput & {
 	vpcId: pulumi.Input<string>;
 	roles: Role[];
 	securityGroupIds: pulumi.Input<pulumi.Input<string>[]>;
+	datadog?: boolean;
 };
