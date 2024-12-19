@@ -8,6 +8,8 @@ import { buildResourceName } from "src/helpers/resource-name-builder";
 import { AwsResourceTypes } from "src/shared-types/aws-resource-types";
 import { BaseComponentInput } from "src/shared-types/component-input";
 import { PostgresqlResourceTypes } from "src/shared-types/postgresql-resource-types";
+import { ParsedSecretUsernamePassword } from "src/shared-types/secret-types";
+import { getDatadogRdsPassword } from "../services/rds/get-datadog-rds-password";
 import { getRdsPostgresDatadogInitScript } from "./rds-postgres-datadog-script";
 
 const engineVersion = "16.3";
@@ -222,24 +224,9 @@ export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 			return masterSecret.then((secret) => secret.secretString);
 		});
 
-		const secretObject: ParsedSecret = pulumi.jsonParse(
+		const secretObject: ParsedSecretUsernamePassword = pulumi.jsonParse(
 			masterSecretString,
-		) as ParsedSecret;
-
-		return secretObject;
-	};
-
-	private getDatadogRdsPassword = (opts: RdsPrismaOptions) => {
-		const datadogSecret = aws.secretsmanager.getSecretVersion({
-			secretId: `${datadogDbPasswordSecretNamePrefix}${opts.name}`,
-		});
-
-		const datadogSecretString = datadogSecret.then(
-			(secret) => secret.secretString,
-		);
-		const secretObject: ParsedSecret = pulumi.jsonParse(
-			datadogSecretString,
-		) as ParsedSecret;
+		) as ParsedSecretUsernamePassword;
 
 		return secretObject;
 	};
@@ -334,7 +321,7 @@ export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 			type: PostgresqlResourceTypes.role,
 		});
 
-		const password = this.getDatadogRdsPassword(opts);
+		const password = getDatadogRdsPassword();
 
 		const newRole = new postgresql.Role(
 			fullRoleName,
@@ -364,6 +351,7 @@ export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 			"postgres-datadog-init-command",
 			{
 				create: datadogInitCommand,
+				// ensures runs each time (script is idempotent)
 				triggers: [randomUUID()],
 			},
 			{ dependsOn: pgProvider },
@@ -393,11 +381,9 @@ type Role = {
 	password: pulumi.Output<string>;
 };
 
-type ParsedSecret = pulumi.Output<{ username: string; password: string }>;
-
 export type RdsPrismaOptions = BaseComponentInput & {
 	originalRdsOpts?: aws.rds.InstanceArgs;
-	databaseName: pulumi.Input<string>;
+	databaseName: string;
 	availabilityZone: pulumi.Input<string>;
 	migrationScriptPath?: string;
 	publiclyAccessible?: boolean;

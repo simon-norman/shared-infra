@@ -7,6 +7,7 @@ import { SecurityGroupInboundPrivateOutboundAll } from "./access/security-group-
 import { SecurityGroupInboundPublicTlsOutboundAll } from "./access/security-group-inbound-public-outbound-all";
 import { ServiceUser } from "./access/service-user";
 import { User } from "./access/user";
+import { DatadogDatabaseMonitoringAgent } from "./database/datadog-database-monitoring-agent";
 import { RdsPrismaPostgresDb } from "./database/rds-prisma-postgres-db";
 import { ApplicationLoadBalancer } from "./routing/application-load-balancer";
 import { EnvironmentHostedZone } from "./routing/environment-hosted-zone";
@@ -44,4 +45,5 @@ export const aws = {
 	QueuedLambdaFunction,
 	SecurityGroupInboundNoneOutboundAll,
 	Secret,
+	DatadogDatabaseMonitoringAgent,
 };

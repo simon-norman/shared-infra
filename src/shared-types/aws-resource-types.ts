@@ -37,4 +37,5 @@ export enum AwsResourceTypes {
 	eventSourceMapping = "event-source-mapping",
 	secret = "secret",
 	rdsParamGroup = "rds-param-group",
+	datadogDbMonitoringAgent = "datadog-db-monitoring-agent",
 }

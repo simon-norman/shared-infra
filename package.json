@@ -23,6 +23,7 @@
 		"@pulumi/digitalocean": "4.25.1",
 		"@pulumi/postgresql": "^3.11.0",
 		"@pulumi/pulumi": "3.104.2",
-		"dedent": "^1.5.3"
+		"dedent": "^1.5.3",
+		"yaml": "^2.6.1"
 	}
 }
