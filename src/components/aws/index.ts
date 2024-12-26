@@ -9,18 +9,19 @@ import { ServiceUser } from "./access/service-user";
 import { User } from "./access/user";
 import { DatadogDatabaseMonitoringAgent } from "./database/datadog-database-monitoring-agent";
 import { RdsPrismaPostgresDb } from "./database/rds-prisma-postgres-db";
-import { ApplicationLoadBalancer } from "./routing/application-load-balancer";
-import { EnvironmentHostedZone } from "./routing/environment-hosted-zone";
+import { EnvironmentHostedZone } from "./routing/dns/environment-hosted-zone";
+import { MasterHostedZone } from "./routing/dns/master-hosted-zone";
+import { MasterNameServerRecord } from "./routing/dns/name-server-record";
+import { ApplicationLoadBalancer } from "./routing/gateway/application-load-balancer";
 import { HttpsCertificate } from "./routing/https-certificate";
-import { MasterHostedZone } from "./routing/master-hosted-zone";
-import { MasterNameServerRecord } from "./routing/name-server-record";
 import { Vpc } from "./routing/vpc";
 import { Vpn } from "./routing/vpn";
-import { EcrRepoImage } from "./services/ecr-repo-image";
-import { Ec2Cluster } from "./services/ecs-cluster";
-import { LambdaFunction } from "./services/lambda";
-import { PublicFargateService } from "./services/public-fargate-service";
-import { QueuedLambdaFunction } from "./services/queued-lambda";
+import { EcrRepoImage } from "./services/containers/ecr-repo-image";
+import { Ec2Cluster } from "./services/containers/ecs-cluster";
+import { PublicFargateService } from "./services/containers/public-fargate-service";
+import { ApiGatewayLambdaFunction } from "./services/lambda/api-lambda";
+import { LambdaFunction } from "./services/lambda/lambda";
+import { QueuedLambdaFunction } from "./services/lambda/queued-lambda";
 
 export const aws = {
 	Vpc,
@@ -46,4 +47,5 @@ export const aws = {
 	SecurityGroupInboundNoneOutboundAll,
 	Secret,
 	DatadogDatabaseMonitoringAgent,
+	ApiGatewayLambdaFunction,
 };

@@ -38,4 +38,12 @@ export enum AwsResourceTypes {
 	secret = "secret",
 	rdsParamGroup = "rds-param-group",
 	datadogDbMonitoringAgent = "datadog-db-monitoring-agent",
+	apiGatewayLambda = "api-gateway-lambda",
+	apiGateway = "api-gateway",
+	apiGatewayDomainName = "api-gateway-domain-name",
+	apiGatewayIntegration = "api-gateway-integration",
+	apiGatewayRoute = "api-gateway-route",
+	apiGatewayStage = "api-gateway-stage",
+	lambdaPermission = "lambda-permission",
+	apiGatewayMapping = "api-gateway-mapping",
 }

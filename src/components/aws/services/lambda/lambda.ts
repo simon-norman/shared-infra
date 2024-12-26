@@ -4,7 +4,6 @@ import { buildComponentName } from "src/helpers";
 import { AwsRegion, AwsResourceTypes } from "src/shared-types";
 import { BaseComponentInput } from "src/shared-types/component-input";
 import { EnvVariable, SecretInput } from "src/shared-types/environment-vars";
-import { Options as EcrRepoOptions } from "./ecr-repo-image";
 
 export interface LambdaFunctionArgs {
 	name: string;
@@ -185,15 +184,14 @@ type DatadogOpts = {
 	version: string;
 };
 
-export type Options = BaseComponentInput &
-	EcrRepoOptions & {
-		subnets: pulumi.Input<pulumi.Input<string>[]>;
-		securityGroups: pulumi.Input<pulumi.Input<string>[]>;
-		serviceEnvironmentVariables?: EnvVariable[];
-		serviceSecrets?: SecretInput[];
-		handler?: string;
-		zipFilePath: string;
-		datadog?: DatadogOpts;
-	};
+export type Options = BaseComponentInput & {
+	subnets: pulumi.Input<pulumi.Input<string>[]>;
+	securityGroups: pulumi.Input<pulumi.Input<string>[]>;
+	serviceEnvironmentVariables?: EnvVariable[];
+	serviceSecrets?: SecretInput[];
+	handler?: string;
+	zipFilePath: string;
+	datadog?: DatadogOpts;
+};
 
 type EnvVariableAsObject = Record<string, pulumi.Input<string>>;
