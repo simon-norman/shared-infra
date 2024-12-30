@@ -46,4 +46,7 @@ export enum AwsResourceTypes {
 	apiGatewayStage = "api-gateway-stage",
 	lambdaPermission = "lambda-permission",
 	apiGatewayMapping = "api-gateway-mapping",
+	scheduledLambda = "scheduled-lambda",
+	eventRule = "event-rule",
+	eventTarget = "event-target",
 }

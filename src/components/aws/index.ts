@@ -20,6 +20,7 @@ import { EcrRepoImage } from "./services/containers/ecr-repo-image";
 import { Ec2Cluster } from "./services/containers/ecs-cluster";
 import { PublicFargateService } from "./services/containers/public-fargate-service";
 import { ApiGatewayLambdaFunction } from "./services/lambda/api-lambda";
+import { ScheduledLambda } from "./services/lambda/cron-lambda";
 import { LambdaFunction } from "./services/lambda/lambda";
 import { QueuedLambdaFunction } from "./services/lambda/queued-lambda";
 
@@ -48,4 +49,5 @@ export const aws = {
 	Secret,
 	DatadogDatabaseMonitoringAgent,
 	ApiGatewayLambdaFunction,
+	ScheduledLambda,
 };
