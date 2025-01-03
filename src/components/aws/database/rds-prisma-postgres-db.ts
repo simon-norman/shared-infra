@@ -239,7 +239,7 @@ export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 	) => {
 		const migrationScriptCommand = pulumi.interpolate`bash ${
 			opts.migrationScriptPath || ""
-		} ${this.getDatabaseConnectionString(opts, secretObject, db)}`;
+		} '${this.getDatabaseConnectionString(opts, secretObject, db)}'`;
 
 		return new local.Command(
 			"postgres-migration-command",

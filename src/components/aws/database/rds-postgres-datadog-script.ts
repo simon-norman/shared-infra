@@ -9,7 +9,7 @@ export const getRdsPostgresDatadogInitScript = ({
 	dbConnectionString,
 }: Params) =>
 	interpolate`
-  psql ${dbConnectionString} << EOF
+  psql '${dbConnectionString}' << EOF
   ALTER ROLE ${datadogSchemaAndRoleName} INHERIT;
   CREATE SCHEMA IF NOT EXISTS ${datadogSchemaAndRoleName};
   GRANT USAGE ON SCHEMA ${datadogSchemaAndRoleName} TO ${datadogSchemaAndRoleName};
