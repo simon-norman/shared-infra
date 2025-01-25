@@ -165,10 +165,14 @@ export class LambdaFunction extends pulumi.ComponentResource {
 						},
 					),
 			},
-			vpcConfig: {
-				subnetIds: opts.subnets,
-				securityGroupIds: opts.securityGroups,
-			},
+			...(opts.subnets && opts.securityGroups
+				? {
+						vpcConfig: {
+							subnetIds: opts.subnets,
+							securityGroupIds: opts.securityGroups,
+						},
+				  }
+				: {}),
 			layers: [secretsLambdaExtensionArn],
 		});
 
@@ -185,8 +189,10 @@ type DatadogOpts = {
 };
 
 export type Options = BaseComponentInput & {
-	subnets: pulumi.Input<pulumi.Input<string>[]>;
-	securityGroups: pulumi.Input<pulumi.Input<string>[]>;
+	//** subnets - do not have to put the lambda in a vpc, hence optional */
+	subnets?: pulumi.Input<pulumi.Input<string>[]>;
+	//** security groups - do not have to put the lambda in a vpc, hence optional */
+	securityGroups?: pulumi.Input<pulumi.Input<string>[]>;
 	serviceEnvironmentVariables?: EnvVariable[];
 	serviceSecrets?: SecretInput[];
 	handler?: string;
