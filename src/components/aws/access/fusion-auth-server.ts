@@ -135,6 +135,26 @@ if ! command -v jq &> /dev/null; then
    yum install -y jq
 fi
 
+# Install Docker if not already installed
+if ! command -v docker &> /dev/null; then
+   echo "Installing Docker..."
+   yum update -y
+   yum install -y docker
+   systemctl start docker
+   systemctl enable docker
+   usermod -a -G docker ec2-user
+fi
+
+# Install Docker Compose if not already installed
+if ! command -v docker-compose &> /dev/null; then
+   echo "Installing Docker Compose..."
+   DOCKER_COMPOSE_VERSION=$(curl -s https://api.github.com/repos/docker/compose/releases/latest | jq -r '.tag_name')
+   mkdir -p /usr/local/bin
+   curl -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+   chmod +x /usr/local/bin/docker-compose
+   ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
+fi
+
 # Install fusion auth
 echo "Installing Fusion Auth..."
 curl -o docker-compose.yml https://raw.githubusercontent.com/FusionAuth/fusionauth-containers/main/docker/fusionauth/docker-compose.yml
