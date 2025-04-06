@@ -315,6 +315,5 @@ echo "Completed user data script execution at $(date)"`;
 }
 
 export type FusionAuthServerOptions = BaseComponentInput & {
-	vpcId: pulumi.Input<string>;
 	subnetId: pulumi.Input<string>;
 };
