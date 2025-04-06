@@ -6,7 +6,7 @@ import { BaseComponentInput } from "src/shared-types/component-input";
 
 export class FusionAuthServer extends pulumi.ComponentResource {
 	public readonly instance: aws.ec2.Instance;
-	public readonly securityGroup: aws.ec2.SecurityGroup;
+	// public readonly securityGroup: aws.ec2.SecurityGroup;
 	public readonly instanceProfile: aws.iam.InstanceProfile;
 	public readonly apiUrl: pulumi.Output<string>;
 
@@ -27,44 +27,38 @@ export class FusionAuthServer extends pulumi.ComponentResource {
 		// Export the API URL as a public property
 		this.apiUrl = apiUrl;
 
-		this.securityGroup = this.createSecurityGroup(opts);
+		// this.securityGroup = this.createSecurityGroup(opts);
 		this.instanceProfile = instanceProfile;
 		const userData = this.getEc2InstanceInitScript();
 		this.instance = this.createInstance(serverName, userData, opts);
 	}
 
-	private createSecurityGroup(opts: FusionAuthServerOptions) {
-		const securityGroupName = buildResourceName({
-			...opts,
-			name: "fusion-auth-server",
-			type: AwsResourceTypes.securityGroup,
-		});
+	// private createSecurityGroup(opts: FusionAuthServerOptions) {
+	// 	const securityGroupName = buildResourceName({
+	// 		...opts,
+	// 		name: "fusion-auth-server",
+	// 		type: AwsResourceTypes.securityGroup,
+	// 	});
 
-		return new aws.ec2.SecurityGroup(
-			securityGroupName,
-			{
-				vpcId: opts.vpcId,
-				ingress: [
-					{
-						protocol: "tcp",
-						fromPort: 9011,
-						toPort: 9011,
-						cidrBlocks: ["0.0.0.0/0"],
-					},
-					{
-						protocol: "tcp",
-						fromPort: 9011,
-						toPort: 9011,
-						cidrBlocks: ["0.0.0.0/0"], // Or restrict to specific IPs
-					},
-				],
-				egress: [
-					{ protocol: "-1", fromPort: 0, toPort: 0, cidrBlocks: ["0.0.0.0/0"] },
-				],
-			},
-			{ parent: this },
-		);
-	}
+	// 	return new aws.ec2.SecurityGroup(
+	// 		securityGroupName,
+	// 		{
+	// 			vpcId: opts.vpcId,
+	// 			ingress: [
+	// 				{
+	// 					protocol: "tcp",
+	// 					fromPort: 9011,
+	// 					toPort: 9011,
+	// 					cidrBlocks: ["0.0.0.0/0"],
+	// 				},
+	// 			],
+	// 			egress: [
+	// 				{ protocol: "-1", fromPort: 0, toPort: 0, cidrBlocks: ["0.0.0.0/0"] },
+	// 			],
+	// 		},
+	// 		{ parent: this },
+	// 	);
+	// }
 
 	private enableInstanceToFetchDatabasePassword(opts: FusionAuthServerOptions) {
 		const roleName = buildResourceName({
@@ -160,7 +154,7 @@ echo "Completed user data script execution at $(date)"`;
 			{
 				ami: "ami-0b2ed2e3df8cf9080",
 				instanceType: "t2.micro",
-				vpcSecurityGroupIds: [this.securityGroup.id],
+				// vpcSecurityGroupIds: [this.securityGroup.id],
 				iamInstanceProfile: this.instanceProfile.name,
 				userData: userData,
 				subnetId: opts.subnetId,
@@ -298,23 +292,23 @@ echo "Completed user data script execution at $(date)"`;
 		// Construct the API URL
 		const apiUrl = pulumi.interpolate`${deployment.invokeUrl}/`;
 
-		// Update the security group to allow traffic from anywhere to the FusionAuth port
-		new aws.ec2.SecurityGroupRule(
-			buildResourceName({
-				...opts,
-				name: "fusion-auth-http-ingress",
-				type: AwsResourceTypes.securityGroup,
-			}),
-			{
-				securityGroupId: this.securityGroup.id,
-				type: "ingress",
-				protocol: "tcp",
-				fromPort: 9011,
-				toPort: 9011,
-				cidrBlocks: ["0.0.0.0/0"], // Ideally restrict this further
-			},
-			{ parent: this },
-		);
+		// // Update the security group to allow traffic from anywhere to the FusionAuth port
+		// new aws.ec2.SecurityGroupRule(
+		// 	buildResourceName({
+		// 		...opts,
+		// 		name: "fusion-auth-http-ingress",
+		// 		type: AwsResourceTypes.securityGroup,
+		// 	}),
+		// 	{
+		// 		securityGroupId: this.securityGroup.id,
+		// 		type: "ingress",
+		// 		protocol: "tcp",
+		// 		fromPort: 9011,
+		// 		toPort: 9011,
+		// 		cidrBlocks: ["0.0.0.0/0"], // Ideally restrict this further
+		// 	},
+		// 	{ parent: this },
+		// );
 
 		return { api, deployment, apiUrl };
 	}
@@ -323,9 +317,4 @@ echo "Completed user data script execution at $(date)"`;
 export type FusionAuthServerOptions = BaseComponentInput & {
 	vpcId: pulumi.Input<string>;
 	subnetId: pulumi.Input<string>;
-	fusionAuthPassword: pulumi.Input<string>;
-	database: {
-		availabilityZone: pulumi.Input<string>;
-		subnetIds: pulumi.Input<pulumi.Input<string>[]>;
-	};
 };
