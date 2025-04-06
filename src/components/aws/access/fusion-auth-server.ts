@@ -148,9 +148,8 @@ fi
 # Install Docker Compose if not already installed
 if ! command -v docker-compose &> /dev/null; then
    echo "Installing Docker Compose..."
-   DOCKER_COMPOSE_VERSION=$(curl -s https://api.github.com/repos/docker/compose/releases/latest | jq -r '.tag_name')
    mkdir -p /usr/local/bin
-   curl -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+   curl -L "https://github.com/docker/compose/releases/download/2.34.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
    chmod +x /usr/local/bin/docker-compose
    ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
 fi
