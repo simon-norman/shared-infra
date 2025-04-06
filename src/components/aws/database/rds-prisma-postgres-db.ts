@@ -23,6 +23,7 @@ export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 	rdsSubnetGroup: aws.rds.SubnetGroup;
 	roles: Array<{ originalName: string; role: postgresql.Role }> = [];
 	paramGroup: aws.rds.ParameterGroup;
+	masterSecretArn: pulumi.Output<string>;
 
 	constructor(opts: RdsPrismaOptions) {
 		const { name: rdsName, sharedNameOpts } = buildComponentName({
@@ -44,6 +45,9 @@ export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 		this.rdsSubnetGroup = rdsSubnetGroup;
 
 		const secretObject = this.getRdsMasterSecret(this.db);
+		this.masterSecretArn = this.db.masterUserSecrets.apply((secret) => {
+			return secret[0].secretArn;
+		});
 
 		const pgProvider = new postgresql.Provider(
 			"pg-provider",
@@ -277,7 +281,7 @@ export class RdsPrismaPostgresDb extends pulumi.ComponentResource {
 			{
 				login: true,
 				name: baseRoleName,
-				password: role.password.apply((password) => password),
+				password: pulumi.output(role.password).apply((password) => password),
 			},
 			{
 				provider: roleParams.pgProvider,
@@ -378,7 +382,7 @@ type GrantArgs = Omit<postgresql.GrantArgs, "role"> & {
 type Role = {
 	name: string;
 	grants: GrantArgs[];
-	password: pulumi.Output<string>;
+	password: pulumi.Output<string> | pulumi.Input<string>;
 };
 
 export type RdsPrismaOptions = BaseComponentInput & {
