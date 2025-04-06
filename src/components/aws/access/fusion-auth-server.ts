@@ -21,16 +21,16 @@ export class FusionAuthServer extends pulumi.ComponentResource {
 		const { instanceProfile } =
 			this.enableInstanceToFetchDatabasePassword(opts);
 
+		// this.securityGroup = this.createSecurityGroup(opts);
+		this.instanceProfile = instanceProfile;
+		const userData = this.getEc2InstanceInitScript();
+		this.instance = this.createInstance(serverName, userData, opts);
+
 		// Add API Gateway with direct connection to EC2
 		const { apiUrl } = this.createDirectApiGateway(opts);
 
 		// Export the API URL as a public property
 		this.apiUrl = apiUrl;
-
-		// this.securityGroup = this.createSecurityGroup(opts);
-		this.instanceProfile = instanceProfile;
-		const userData = this.getEc2InstanceInitScript();
-		this.instance = this.createInstance(serverName, userData, opts);
 	}
 
 	// private createSecurityGroup(opts: FusionAuthServerOptions) {
