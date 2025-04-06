@@ -276,7 +276,7 @@ echo "Completed user data script execution at $(date)"`;
 		new aws.apigateway.MethodSettings(
 			stageSettingsName,
 			{
-				restApiId: api.id,
+				restApi: api.id,
 				// @ts-ignore
 				stageName: deployment.stageName,
 				methodPath: "*/*",
