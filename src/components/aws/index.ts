@@ -1,5 +1,6 @@
 import { CiCdUserGroup } from "./access/ci-cd-user-group";
 import { CrossAccountAccessRole } from "./access/cross-account-access-role";
+import { FusionAuthServer } from "./access/fusion-auth-server";
 import { LocalAdminUserGroup } from "./access/local-admin-user-group";
 import { Secret } from "./access/secret";
 import { SecurityGroupInboundNoneOutboundAll } from "./access/security-group-inbound-none-outbound-all";
@@ -50,4 +51,5 @@ export const aws = {
 	DatadogDatabaseMonitoringAgent,
 	ApiGatewayLambdaFunction,
 	ScheduledLambda,
+	FusionAuthServer,
 };
