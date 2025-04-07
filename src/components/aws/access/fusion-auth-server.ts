@@ -148,10 +148,8 @@ fi
 # Install Docker Compose if not already installed
 if ! command -v docker-compose &> /dev/null; then
    echo "Installing Docker Compose..."
-   mkdir -p /usr/local/bin
-   curl -L "https://github.com/docker/compose/releases/download/2.34.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-   chmod +x /usr/local/bin/docker-compose
-   ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
+   sudo yum update
+   sudo yum install docker-compose-plugin
 fi
 
 # Install fusion auth
@@ -300,9 +298,9 @@ echo "Completed user data script execution at $(date)"`;
 				stageName: deployment.stageName,
 				methodPath: "*/*",
 				settings: {
-					metricsEnabled: true,
-					loggingLevel: "INFO",
-					dataTraceEnabled: true,
+					metricsEnabled: false,
+					loggingLevel: "OFF",
+					dataTraceEnabled: false,
 				},
 			},
 			{ parent: this },
