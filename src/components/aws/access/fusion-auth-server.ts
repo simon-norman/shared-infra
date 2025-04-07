@@ -148,8 +148,9 @@ fi
 # Install Docker Compose if not already installed
 if ! command -v docker-compose &> /dev/null; then
    echo "Installing Docker Compose..."
-   sudo yum update
-   sudo yum install docker-compose-plugin
+  sudo curl -L https://github.com/docker/compose/releases/latest/download/docker-compose-Linux-x86_64 -o /usr/local/bin/docker-compose
+  sudo chmod +x /usr/local/bin/docker-compose
+  docker-compose version
 fi
 
 # Install fusion auth
