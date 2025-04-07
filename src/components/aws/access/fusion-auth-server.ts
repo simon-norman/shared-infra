@@ -154,6 +154,8 @@ if ! command -v docker-compose &> /dev/null; then
 fi
 
 # Install fusion auth
+mkdir -p /home/ec2-user/fusionauth
+cd /home/ec2-user/fusionauth
 echo "Installing Fusion Auth..."
 curl -o docker-compose.yml https://raw.githubusercontent.com/FusionAuth/fusionauth-containers/main/docker/fusionauth/docker-compose.yml
 curl -o .env https://raw.githubusercontent.com/FusionAuth/fusionauth-containers/main/docker/fusionauth/.env
