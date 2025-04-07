@@ -173,7 +173,7 @@ echo "Completed user data script execution at $(date)"`;
 			`${name}-instance`,
 			{
 				ami: "ami-0b2ed2e3df8cf9080",
-				instanceType: "t2.micro",
+				instanceType: "t2.medium",
 				// vpcSecurityGroupIds: [this.securityGroup.id],
 				iamInstanceProfile: this.instanceProfile.name,
 				userData: userData,
