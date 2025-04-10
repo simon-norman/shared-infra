@@ -252,6 +252,7 @@ echo "Completed user data script execution at $(date)"`;
 			apiId: params.apiId,
 			integrationType: "HTTP_PROXY",
 			// For HTTP APIs, the variable syntax is different - note the $$ escaping
+			// @ts-ignore
 			integrationUri: pulumi.interpolate`http://${this.instance.publicIp}:9011/$${request.path}`,
 			integrationMethod: "ANY",
 			payloadFormatVersion: "1.0",
