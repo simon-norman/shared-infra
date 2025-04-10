@@ -306,7 +306,7 @@ echo "Completed user data script execution at $(date)"`;
 
 		return new aws.apigateway.DomainName(domainName, {
 			domainName: hostname,
-			certificateArn: this.opts.certificateArn,
+			regionalCertificateArn: this.opts.certificateArn,
 			endpointConfiguration: {
 				types: "REGIONAL",
 			},
