@@ -251,12 +251,11 @@ echo "Completed user data script execution at $(date)"`;
 		return new aws.apigatewayv2.Integration(integrationName, {
 			apiId: params.apiId,
 			integrationType: "HTTP_PROXY",
-			integrationUri: pulumi.interpolate`http://${this.instance.publicIp}:9011/{proxy}`,
+			// For HTTP APIs, the variable syntax is different - note the $$ escaping
+			integrationUri: pulumi.interpolate`http://${this.instance.publicIp}:9011/$${request.path}`,
 			integrationMethod: "ANY",
 			payloadFormatVersion: "1.0",
-			requestParameters: {
-				"integration.request.path.proxy": "$request.path.proxy",
-			},
+			// Don't use requestParameters for HTTP APIs in this way - it uses a different approach
 		});
 	};
 
