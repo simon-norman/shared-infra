@@ -1,7 +1,7 @@
 {
 	"name": "@breeze32/shared-infra",
 	"author": "Simon Norman",
-	"version": "1.0.31",
+	"version": "1.0.32",
 	"license": "MIT",
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",
