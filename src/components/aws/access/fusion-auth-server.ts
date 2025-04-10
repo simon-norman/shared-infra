@@ -248,15 +248,15 @@ echo "Completed user data script execution at $(date)"`;
 			resourceType: AwsResourceTypes.apiGatewayIntegration,
 		});
 
-		// For HTTP APIs (API Gateway v2), the parameters work differently
-		// We need to update both the integrationUri and the way we map parameters
 		return new aws.apigatewayv2.Integration(integrationName, {
 			apiId: params.apiId,
 			integrationType: "HTTP_PROXY",
-			integrationUri: pulumi.interpolate`http://${this.instance.publicIp}:9011/${request.path}`,
+			integrationUri: pulumi.interpolate`http://${this.instance.publicIp}:9011/{proxy}`,
 			integrationMethod: "ANY",
 			payloadFormatVersion: "1.0",
-			// In HTTP APIs, we don't need to specify request parameters for simple path mapping
+			requestParameters: {
+				"integration.request.path.proxy": "$request.path.proxy",
+			},
 		});
 	};
 
@@ -283,7 +283,6 @@ echo "Completed user data script execution at $(date)"`;
 			resourceType: AwsResourceTypes.apiGatewayRoute,
 		});
 
-		// For HTTP APIs, the route and integration need to be properly connected
 		return new aws.apigatewayv2.Route(routeName, {
 			apiId: params.apiId,
 			routeKey: "ANY /{proxy+}",
