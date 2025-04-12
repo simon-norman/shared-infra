@@ -42,7 +42,7 @@ export class FusionAuthServer extends pulumi.ComponentResource {
 
 		this.createDnsRecord({
 			targetDomainName: domainName.domainName,
-			targetHostedZoneId: opts.hostedZoneId as string,
+			targetHostedZoneId: domainName.regionalZoneId,
 		});
 	}
 
