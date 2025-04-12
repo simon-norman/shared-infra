@@ -11,7 +11,13 @@ import { BaseComponentInput } from "src/shared-types/component-input";
 export class FusionAuthServer extends pulumi.ComponentResource {
 	public readonly instance: aws.ec2.Instance;
 	public readonly instanceProfile: aws.iam.InstanceProfile;
-	public readonly apiUrl: pulumi.Output<string>;
+	public readonly api: aws.apigatewayv2.Api;
+	public readonly integration: aws.apigatewayv2.Integration;
+	public readonly route: aws.apigatewayv2.Route;
+	public readonly stage: aws.apigatewayv2.Stage;
+	public readonly domainName: aws.apigatewayv2.DomainName;
+	public readonly apiMapping: aws.apigatewayv2.ApiMapping;
+	public readonly dnsRecord: aws.route53.Record;
 	public readonly opts: FusionAuthServerOptions;
 
 	constructor(opts: FusionAuthServerOptions) {
@@ -30,20 +36,40 @@ export class FusionAuthServer extends pulumi.ComponentResource {
 		const userData = this.getEc2InstanceInitScript();
 		this.instance = this.createInstance(serverName, userData, opts);
 
-		// Create a REST API Gateway (v1) instead of HTTP API (v2)
-		// REST API has better support for proxy integrations
-		const { apiUrl } = this.createRestApiGateway(opts);
+		const api = this.createApi();
+		this.api = api;
 
-		// Export the API URL as a public property
-		this.apiUrl = apiUrl;
-
-		// Create custom domain if needed
 		const domainName = this.createDomainName();
+		this.domainName = domainName;
 
-		this.createDnsRecord({
-			targetDomainName: domainName.domainName,
-			targetHostedZoneId: domainName.regionalZoneId,
+		const integration = this.createIntegration({
+			apiId: api.id,
 		});
+		this.integration = integration;
+
+		const route = this.createRoute({
+			apiId: api.id,
+			integrationId: integration.id,
+		});
+		this.route = route;
+
+		const stage = this.createStage({
+			apiId: api.id,
+		});
+		this.stage = stage;
+
+		const apiMapping = this.createApiMapping({
+			apiId: api.id,
+			domainNameId: domainName.id,
+			stageId: stage.id,
+		});
+		this.apiMapping = apiMapping;
+
+		const dnsRecord = this.createDnsRecord({
+			targetDomainName: domainName.domainNameConfiguration.targetDomainName,
+			targetHostedZoneId: domainName.domainNameConfiguration.hostedZoneId,
+		});
+		this.dnsRecord = dnsRecord;
 	}
 
 	private enableInstanceToFetchDatabasePassword(opts: FusionAuthServerOptions) {
@@ -169,148 +195,90 @@ echo "Completed user data script execution at $(date)"`;
 		);
 	}
 
-	private createRestApiGateway(opts: FusionAuthServerOptions): {
-		api: aws.apigateway.RestApi;
-		deployment: aws.apigateway.Deployment;
-		apiUrl: pulumi.Output<string>;
-	} {
-		// Create API Gateway
-		const apiName = buildResourceName({
-			...opts,
-			name: "fusion-auth-api",
-			type: AwsResourceTypes.apiGateway,
+	private createApi = (): aws.apigatewayv2.Api => {
+		const { name: apiName } = buildComponentName({
+			...this.opts,
+			resourceType: AwsResourceTypes.apiGateway,
 		});
 
-		const api = new aws.apigateway.RestApi(
-			apiName,
-			{
-				description: "API Gateway for FusionAuth",
-				endpointConfiguration: {
-					types: "REGIONAL",
-				},
-			},
-			{ parent: this },
-		);
-
-		// Create a resource with a greedy path parameter to capture all paths
-		const resourceName = buildResourceName({
-			...opts,
-			name: "fusion-auth-resource",
-			type: AwsResourceTypes.apiGateway,
+		return new aws.apigatewayv2.Api(apiName, {
+			protocolType: "HTTP",
+			name: apiName,
 		});
+	};
 
-		const resource = new aws.apigateway.Resource(
-			resourceName,
-			{
-				restApi: api.id,
-				parentId: api.rootResourceId,
-				pathPart: "{proxy+}",
-			},
-			{ parent: this },
-		);
-
-		const methodName = buildResourceName({
-			...opts,
-			name: "fusion-auth-method",
-			type: AwsResourceTypes.apiGatewayMethod,
-		});
-
-		const method = new aws.apigateway.Method(
-			methodName,
-			{
-				restApi: api.id,
-				resourceId: resource.id,
-				httpMethod: "ANY",
-				authorization: "NONE",
-				requestParameters: {
-					"method.request.path.proxy": true,
-				},
-			},
-			{ parent: this },
-		);
-
-		// Create direct HTTP integration with the EC2 public IP
-		const integrationName = buildResourceName({
-			...opts,
-			name: "fusion-auth-integration",
-			type: AwsResourceTypes.apiGatewayIntegration,
-		});
-
-		const integration = new aws.apigateway.Integration(
-			integrationName,
-			{
-				restApi: api.id,
-				resourceId: resource.id,
-				httpMethod: method.httpMethod,
-				integrationHttpMethod: "ANY",
-				type: "HTTP_PROXY",
-				uri: pulumi.interpolate`http://${this.instance.publicIp}:9011/{proxy}`,
-				requestParameters: {
-					"integration.request.path.proxy": "method.request.path.proxy",
-				},
-			},
-			{ parent: this },
-		);
-
-		// Deploy the API
-		const deploymentName = buildResourceName({
-			...opts,
-			name: "fusion-auth-deployment",
-			type: AwsResourceTypes.apiGatewayDeployment,
-		});
-
-		const deployment = new aws.apigateway.Deployment(
-			deploymentName,
-			{
-				restApi: api.id,
-				stageName: "prod",
-				description: "Production deployment for FusionAuth API",
-			},
-			{ parent: this, dependsOn: [integration] },
-		);
-
-		// Create API Gateway stage settings with logging
-		const stageSettingsName = buildResourceName({
-			...opts,
-			name: "fusion-auth-stage",
-			type: AwsResourceTypes.apiGateway,
-		});
-
-		new aws.apigateway.MethodSettings(
-			stageSettingsName,
-			{
-				restApi: api.id,
-				stageName: deployment.stageName as pulumi.Output<string>,
-				methodPath: "*/*",
-				settings: {
-					metricsEnabled: false,
-					loggingLevel: "OFF",
-					dataTraceEnabled: false,
-				},
-			},
-			{ parent: this },
-		);
-
-		// Construct the API URL
-		const apiUrl = pulumi.interpolate`${deployment.invokeUrl}/`;
-
-		return { api, deployment, apiUrl };
-	}
-
-	private createDomainName = (): aws.apigateway.DomainName => {
+	private createDomainName = (): aws.apigatewayv2.DomainName => {
 		const { name: domainName } = buildComponentName({
 			...this.opts,
 			resourceType: AwsResourceTypes.apiGatewayDomainName,
 		});
 		const hostname = buildHostName({ ...this.opts });
 
-		return new aws.apigateway.DomainName(domainName, {
+		return new aws.apigatewayv2.DomainName(domainName, {
 			domainName: hostname,
-			regionalCertificateArn: this.opts.certificateArn,
-			endpointConfiguration: {
-				types: "REGIONAL",
+			domainNameConfiguration: {
+				certificateArn: this.opts.certificateArn,
+				endpointType: "REGIONAL",
+				securityPolicy: "TLS_1_2",
 			},
-			securityPolicy: "TLS_1_2",
+		});
+	};
+
+	private createIntegration = (
+		params: IntegrationParams,
+	): aws.apigatewayv2.Integration => {
+		const { name: integrationName } = buildComponentName({
+			...this.opts,
+			resourceType: AwsResourceTypes.apiGatewayIntegration,
+		});
+
+		return new aws.apigatewayv2.Integration(integrationName, {
+			apiId: params.apiId,
+			integrationType: "AWS_PROXY",
+			integrationUri: pulumi.interpolate`http://${this.instance.publicIp}:9011`,
+			integrationMethod: "POST",
+			payloadFormatVersion: "2.0",
+		});
+	};
+
+	private createRoute = (params: RouteParams): aws.apigatewayv2.Route => {
+		const { name: routeName } = buildComponentName({
+			...this.opts,
+			resourceType: AwsResourceTypes.apiGatewayRoute,
+		});
+
+		return new aws.apigatewayv2.Route(routeName, {
+			apiId: params.apiId,
+			routeKey: "ANY /{proxy+}",
+			target: pulumi.interpolate`integrations/${params.integrationId}`,
+		});
+	};
+
+	private createStage = (params: StageParams): aws.apigatewayv2.Stage => {
+		const { name: stageName } = buildComponentName({
+			...this.opts,
+			resourceType: AwsResourceTypes.apiGatewayStage,
+		});
+
+		return new aws.apigatewayv2.Stage(stageName, {
+			apiId: params.apiId,
+			name: "$default",
+			autoDeploy: true,
+		});
+	};
+
+	private createApiMapping = (
+		params: ApiMappingParams,
+	): aws.apigatewayv2.ApiMapping => {
+		const { name: apiMappingName } = buildComponentName({
+			...this.opts,
+			resourceType: AwsResourceTypes.apiGatewayMapping,
+		});
+
+		return new aws.apigatewayv2.ApiMapping(apiMappingName, {
+			apiId: params.apiId,
+			domainName: params.domainNameId,
+			stage: params.stageId,
 		});
 	};
 
@@ -346,4 +314,23 @@ export type FusionAuthServerOptions = BaseComponentInput & {
 type DnsRecordParams = {
 	targetDomainName: pulumi.Input<string>;
 	targetHostedZoneId: pulumi.Input<string>;
+};
+
+type IntegrationParams = {
+	apiId: pulumi.Input<string>;
+};
+
+type RouteParams = {
+	apiId: pulumi.Input<string>;
+	integrationId: pulumi.Input<string>;
+};
+
+type StageParams = {
+	apiId: pulumi.Input<string>;
+};
+
+type ApiMappingParams = {
+	apiId: pulumi.Input<string>;
+	domainNameId: pulumi.Input<string>;
+	stageId: pulumi.Input<string>;
 };
