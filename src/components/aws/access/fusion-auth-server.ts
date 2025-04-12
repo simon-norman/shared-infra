@@ -234,9 +234,9 @@ echo "Completed user data script execution at $(date)"`;
 
 		return new aws.apigatewayv2.Integration(integrationName, {
 			apiId: params.apiId,
-			integrationType: "AWS_PROXY",
+			integrationType: "HTTP_PROXY",
 			integrationUri: "http://13.40.173.41:9011",
-			integrationMethod: "POST",
+			integrationMethod: "ANY",
 			payloadFormatVersion: "2.0",
 		});
 	};
