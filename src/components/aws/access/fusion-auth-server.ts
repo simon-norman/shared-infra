@@ -235,7 +235,7 @@ echo "Completed user data script execution at $(date)"`;
 		return new aws.apigatewayv2.Integration(integrationName, {
 			apiId: params.apiId,
 			integrationType: "AWS_PROXY",
-			integrationUri: pulumi.interpolate`http://${this.instance.publicIp}:9011`,
+			integrationUri: pulumi.interpolate`http://13.40.173.41:9011`,
 			integrationMethod: "POST",
 			payloadFormatVersion: "2.0",
 		});
