@@ -237,7 +237,6 @@ echo "Completed user data script execution at $(date)"`;
 			integrationType: "HTTP_PROXY",
 			integrationUri: "http://13.40.173.41:9011",
 			integrationMethod: "ANY",
-			payloadFormatVersion: "2.0",
 		});
 	};
 
