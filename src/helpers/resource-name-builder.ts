@@ -62,5 +62,5 @@ type HostnameOptions = {
 };
 
 export const buildHostName = ({ environment, name }: HostnameOptions) => {
-	return `${name}.${environment}.simonnorman.online`;
+	return `${name}.${environment}.simonnorman.org`;
 };

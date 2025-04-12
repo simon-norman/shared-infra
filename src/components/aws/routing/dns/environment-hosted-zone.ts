@@ -16,7 +16,7 @@ export class EnvironmentHostedZone extends pulumi.ComponentResource {
 		});
 		super(resourceType, zoneName, {}, opts.pulumiOpts);
 
-		const domainName = `${opts.environment}.simonnorman.online`;
+		const domainName = `${opts.environment}.simonnorman.org`;
 
 		this.zone = new aws.route53.Zone(
 			zoneName,

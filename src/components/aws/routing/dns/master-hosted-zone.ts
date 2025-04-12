@@ -19,7 +19,7 @@ export class MasterHostedZone extends pulumi.ComponentResource {
 
 		super(AwsResourceTypes.route53Zone, zoneName, {}, opts.pulumiOpts);
 
-		const domainName = "simonnorman.online";
+		const domainName = "simonnorman.org";
 
 		this.zone = new aws.route53.Zone(
 			zoneName,

@@ -17,7 +17,7 @@ export class HttpsCertificate extends pulumi.ComponentResource {
 		});
 		super(resourceType, name, {}, opts.pulumiOpts);
 
-		const domainName = `*.${opts.environment}.simonnorman.online`;
+		const domainName = `*.${opts.environment}.simonnorman.org`;
 
 		this.certificate = new aws.acm.Certificate(
 			name,

@@ -19,7 +19,7 @@ export class MasterNameServerRecord extends pulumi.ComponentResource {
 
 		super(AwsResourceTypes.dnsRecord, recordName, {}, opts.pulumiOpts);
 
-		const domainName = `${opts.subdomainEnvironment}.simonnorman.online`;
+		const domainName = `${opts.subdomainEnvironment}.simonnorman.org`;
 
 		this.record = new aws.route53.Record(
 			recordName,
