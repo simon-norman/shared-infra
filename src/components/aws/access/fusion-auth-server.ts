@@ -266,6 +266,38 @@ echo "Completed user data script execution at $(date)"`;
 		});
 	};
 
+	private createSecurityGroup = (): aws.ec2.SecurityGroup => {
+		const { name: securityGroupName } = buildComponentName({
+			...this.opts,
+			resourceType: AwsResourceTypes.securityGroup,
+		});
+
+		const securityGroup = new aws.ec2.SecurityGroup(
+			securityGroupName,
+			{
+				name: securityGroupName,
+				vpcId: this.opts.vpcId,
+				description: "No traffic in, allow all traffic out",
+			},
+			{ parent: this },
+		);
+
+		new aws.vpc.SecurityGroupEgressRule(`${securityGroupName}-egressrule`, {
+			securityGroupId: securityGroup.id,
+			cidrIpv4: "0.0.0.0/0",
+			ipProtocol: "-1",
+		});
+
+		// TODO: Switch to using vpc links in prod, using the security group to control the traffic
+		new aws.vpc.SecurityGroupIngressRule(`${securityGroupName}-ingressrule`, {
+			securityGroupId: securityGroup.id,
+			cidrIpv4: "0.0.0.0/0",
+			ipProtocol: "http",
+		});
+
+		return securityGroup;
+	};
+
 	private createApiMapping = (
 		params: ApiMappingParams,
 	): aws.apigatewayv2.ApiMapping => {
@@ -308,6 +340,7 @@ export type FusionAuthServerOptions = BaseComponentInput & {
 	subnetId: pulumi.Input<string>;
 	hostedZoneId: pulumi.Input<string>;
 	certificateArn: pulumi.Input<string>;
+	vpcId: pulumi.Input<string>;
 };
 
 type DnsRecordParams = {
