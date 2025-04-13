@@ -39,6 +39,8 @@ export class FusionAuthServer extends pulumi.ComponentResource {
 		const api = this.createApi();
 		this.api = api;
 
+		this.createSecurityGroup();
+
 		const domainName = this.createDomainName();
 		this.domainName = domainName;
 
@@ -235,7 +237,7 @@ echo "Completed user data script execution at $(date)"`;
 		return new aws.apigatewayv2.Integration(integrationName, {
 			apiId: params.apiId,
 			integrationType: "HTTP_PROXY",
-			integrationUri: "http://13.40.173.41:9011",
+			integrationUri: pulumi.interpolate`http://${this.instance.publicIp}:9011`,
 			integrationMethod: "ANY",
 		});
 	};
