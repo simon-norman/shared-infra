@@ -294,7 +294,7 @@ echo "Completed user data script execution at $(date)"`;
 		new aws.vpc.SecurityGroupIngressRule(`${securityGroupName}-ingressrule`, {
 			securityGroupId: securityGroup.id,
 			cidrIpv4: "0.0.0.0/0",
-			ipProtocol: "http",
+			ipProtocol: "tcp",
 			fromPort: 9011,
 			toPort: 9011,
 		});
