@@ -293,6 +293,8 @@ echo "Completed user data script execution at $(date)"`;
 			securityGroupId: securityGroup.id,
 			cidrIpv4: "0.0.0.0/0",
 			ipProtocol: "http",
+			fromPort: 9011,
+			toPort: 9011,
 		});
 
 		return securityGroup;
