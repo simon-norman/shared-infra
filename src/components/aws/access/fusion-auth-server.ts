@@ -39,8 +39,6 @@ export class FusionAuthServer extends pulumi.ComponentResource {
 		const api = this.createApi();
 		this.api = api;
 
-		this.createSecurityGroup();
-
 		const domainName = this.createDomainName();
 		this.domainName = domainName;
 
@@ -182,6 +180,7 @@ echo "Completed user data script execution at $(date)"`;
 		userData: pulumi.Output<string>,
 		opts: FusionAuthServerOptions,
 	) {
+		const securityGroup = this.createSecurityGroup();
 		return new aws.ec2.Instance(
 			`${name}-instance`,
 			{
@@ -192,6 +191,7 @@ echo "Completed user data script execution at $(date)"`;
 				subnetId: opts.subnetId,
 				userDataReplaceOnChange: true,
 				tags: { Name: `${name}-instance` },
+				vpcSecurityGroupIds: [securityGroup.id],
 			},
 			{ parent: this },
 		);
