@@ -82,7 +82,9 @@ export class LambdaFunction extends pulumi.ComponentResource {
 	private addSecretsAccessPermissions(opts: Options, lambdaRole: aws.iam.Role) {
 		const serviceSecretArn = aws.secretsmanager
 			.getSecret({
-				name: `${opts.name}-${opts.environment}/doppler`,
+				name: `${opts.name}-${
+					opts.baseEnvironment || opts.environment
+				}/doppler`,
 			})
 			.then((secret) => secret.arn);
 

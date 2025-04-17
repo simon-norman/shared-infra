@@ -66,7 +66,9 @@ export class PublicFargateService extends pulumi.ComponentResource {
 	private createServiceRole = (opts: Options) => {
 		const serviceSecretArn = aws.secretsmanager
 			.getSecret({
-				name: `${opts.name}-${opts.environment}/doppler`,
+				name: `${opts.name}-${
+					opts.baseEnvironment || opts.environment
+				}/doppler`,
 			})
 			.then((secret) => secret.arn);
 

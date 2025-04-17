@@ -3,4 +3,5 @@ import { SharedNameOptions } from "src/helpers";
 
 export type BaseComponentInput = SharedNameOptions & {
 	pulumiOpts?: pulumi.ComponentResourceOptions;
+	baseEnvironment?: string;
 };
