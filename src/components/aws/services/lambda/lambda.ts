@@ -145,7 +145,7 @@ export class LambdaFunction extends pulumi.ComponentResource {
 			code: new pulumi.asset.FileArchive(opts.zipFilePath),
 			role: lambdaRole.arn,
 			timeout: 20,
-			memorySize: 256,
+			memorySize: 512,
 			handler: opts.handler,
 			runtime: aws.lambda.Runtime.NodeJS20dX,
 			environment: {
