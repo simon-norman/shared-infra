@@ -2,5 +2,5 @@
   "rules": {
     "no-caret-version-dependencies": "error"
   },
-  "patterns": ["package.json", "src/package.json"]
+  "patterns": ["src/package.json"]
 }
