@@ -36,6 +36,8 @@ export class FusionAuthServer extends pulumi.ComponentResource {
 		const userData = this.getEc2InstanceInitScript();
 		this.instance = this.createInstance(serverName, userData, opts);
 
+		// have to use a different solution to api gateway as issues with the proxy headers
+		// https://github.com/FusionAuth/fusionauth-issues/issues/470
 		const api = this.createApi();
 		this.api = api;
 
@@ -239,13 +241,6 @@ echo "Completed user data script execution at $(date)"`;
 			integrationType: "HTTP_PROXY",
 			integrationUri: pulumi.interpolate`http://${this.instance.publicIp}:9011/{proxy}`,
 			integrationMethod: "ANY",
-			requestParameters: {
-				"append:header.X-Forwarded-Proto": "$request.header.X-Forwarded-Proto",
-				"overwrite:header.X-Forwarded-Proto": "https",
-				"append:header.X-Forwarded-Host": "$request.header.X-Forwarded-Host",
-				"overwrite:header.X-Forwarded-Host":
-					"fusion-auth.dev-1.simonnorman.org",
-			},
 		});
 	};
 
