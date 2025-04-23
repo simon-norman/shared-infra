@@ -1,1 +1,1 @@
-pnpm exec npmPkgJsonLint \"**/*package.json\"
+pnpm exec npmPkgJsonLint \**/*package.json\
