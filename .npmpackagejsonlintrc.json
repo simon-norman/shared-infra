@@ -1,0 +1,8 @@
+{
+  "rules": {
+    "prefer-no-version-zero-dependencies": "error",
+    "prefer-caret-version-dependencies": "off",
+    "prefer-tilde-version-dependencies": "off",
+    "valid-values-dependencies-versions": ["error", "versionRegex"]
+  }
+}

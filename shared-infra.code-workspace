@@ -1,0 +1,75 @@
+{
+	"extensions": {
+		"recommendations": [
+			"biomejs.biome",
+			"me-dutour-mathieu.vscode-github-actions",
+			"firsttris.vscode-jest-runner",
+			"ms-playwright.playwright",
+			"renesaarsoo.sql-formatter-vsc",
+			"simonsiefke.svg-preview",
+			"styled-components.vscode-styled-components",
+			"zenstack.zenstack",
+			"esbenp.prettier-vscode"
+		]
+	},
+	"folders": [
+		{
+			"name": "root",
+			"path": "./"
+		}
+	],
+	"settings": {
+		"editor.defaultFormatter": "biomejs.biome",
+		"editor.formatOnSave": true,
+		"editor.codeActionsOnSave": {
+			"quickfix.biome": "explicit",
+			"source.organizeImports.biome": "explicit"
+		},
+		"[typescript]": {
+			"editor.tabSize": 2
+		},
+		"[javscript]": {
+			"editor.tabSize": 2
+		},
+		"[python]": {
+			"editor.tabSize": 4
+		},
+		"editor.detectIndentation": false
+	},
+	"launch": {
+		"version": "0.2.0",
+		"configurations": [
+			{
+				"type": "node",
+				"request": "launch",
+				"name": "Debug Script via Make",
+				"skipFiles": ["<node_internals>/**"],
+				"cwd": "${workspaceFolder}/scripts",
+				"runtimeExecutable": "make",
+				"runtimeArgs": [
+					"run-script",
+					"ENV=${input:env}",
+					"SCRIPT=${input:script}"
+				],
+				"console": "integratedTerminal",
+				"sourceMaps": true,
+				"envFile": "${workspaceFolder}/.env",
+				"env": {
+					"NODE_ENV": "local"
+				}
+			}
+		],
+		"inputs": [
+			{
+				"id": "env",
+				"type": "promptString",
+				"description": "Environment"
+			},
+			{
+				"id": "script",
+				"type": "promptString",
+				"description": "Script command to run"
+			}
+		]
+	}
+}
