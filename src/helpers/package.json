@@ -24,7 +24,7 @@
     "@breeze32/ts-backend-utilities": "1.9.8",
     "@pulumi/awsx": "2.16.1",
     "@pulumi/command": "0.10.0",
-    "@pulumi/digitalocean": "4.25.1",
+    "@pulumi/digitalocean": "^4.25.1",
     "@pulumi/postgresql": "3.11.0",
     "@pulumi/pulumi": "3.104.2",
     "dedent": "1.5.3",

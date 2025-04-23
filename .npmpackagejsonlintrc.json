@@ -1,6 +1,7 @@
 {
   "rules": {
-    "no-caret-version-dependencies": "error"
+    "no-caret-version-dependencies": "error",
+    "no-caret-version-devDependencies": "error"
   },
   "patterns": ["**/package.json"]
 }
