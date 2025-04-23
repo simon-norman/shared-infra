@@ -32,7 +32,12 @@ export class FusionAuthComponent extends pulumi.ComponentResource {
 			resourceType: FusionAuthResourceTypes.instance,
 		});
 
-		super("custom:fusionauth", fusionAuthName, {}, opts.pulumiOpts);
+		super(
+			FusionAuthResourceTypes.instance,
+			fusionAuthName,
+			{},
+			opts.pulumiOpts,
+		);
 
 		// Set up FusionAuth provider
 		const { name: providerName } = buildComponentName({
