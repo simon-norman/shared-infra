@@ -237,7 +237,7 @@ echo "Completed user data script execution at $(date)"`;
 		return new aws.apigatewayv2.Integration(integrationName, {
 			apiId: params.apiId,
 			integrationType: "HTTP_PROXY",
-			integrationUri: pulumi.interpolate`http://${this.instance.publicIp}:9011{proxy}`,
+			integrationUri: pulumi.interpolate`http://${this.instance.publicIp}:9011/{proxy}`,
 			integrationMethod: "ANY",
 			requestParameters: {
 				"append:header.X-Forwarded-Proto": "$request.header.X-Forwarded-Proto",
