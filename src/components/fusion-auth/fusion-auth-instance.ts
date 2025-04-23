@@ -89,6 +89,7 @@ export class FusionAuthComponent extends pulumi.ComponentResource {
 		const application = new fusionauth.FusionAuthApplication(
 			applicationName,
 			{
+				applicationId: applicationName,
 				name: opts.applicationName,
 				jwtConfiguration: {
 					enabled: true,
