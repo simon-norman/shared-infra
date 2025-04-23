@@ -1,1 +1,1 @@
-pnpm exec npmPkgJsonLint -c ./.npmpackagejsonlintrc.json ./src
+pnpm exec npmPkgJsonLint -c ./.npmpackagejsonlintrc.json .
