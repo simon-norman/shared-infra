@@ -1,4 +1,5 @@
 import { Input } from "@pulumi/pulumi";
+import { FusionAuthResourceTypes } from "src/components/fusion-auth/fusion-auth-resources";
 import { AwsResourceTypes } from "src/shared-types/aws-resource-types";
 import { CustomResourceTypes } from "src/shared-types/custom-resource-types";
 import { DigitalOceanResourceTypes } from "src/shared-types/digital-ocean-resource-types";
@@ -8,6 +9,7 @@ export type ResourceType =
 	| AwsResourceTypes
 	| DigitalOceanResourceTypes
 	| PostgresqlResourceTypes
+	| FusionAuthResourceTypes
 	| CustomResourceTypes;
 
 type ResourceNameOpts = {
