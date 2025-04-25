@@ -85,6 +85,22 @@ export class FusionAuthComponent extends pulumi.ComponentResource {
 			resourceType: FusionAuthResourceTypes.application,
 		});
 
+		const { name: keyName } = buildComponentName({
+			...opts,
+			name: `${opts.applicationName}-rsa-key`,
+			resourceType: FusionAuthResourceTypes.key,
+		});
+
+		const rsaKey = new fusionauth.FusionAuthKey(
+			keyName,
+			{
+				algorithm: "RS256",
+				name: keyName,
+				length: 2048,
+			},
+			{ provider, parent: this },
+		);
+
 		// Create a new application
 		const application = new fusionauth.FusionAuthApplication(
 			applicationName,
@@ -95,6 +111,8 @@ export class FusionAuthComponent extends pulumi.ComponentResource {
 					enabled: true,
 					ttlSeconds: 3600, // 1 hour
 					refreshTokenTtlMinutes: 60 * 24 * 7,
+					accessTokenId: rsaKey.id,
+					idTokenKeyId: rsaKey.id,
 				},
 				loginConfiguration: {
 					requireAuthentication: false,
